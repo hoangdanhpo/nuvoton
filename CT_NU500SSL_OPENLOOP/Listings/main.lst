@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.0.0   MAIN                                                              03/29/2022 17:56:05 PAGE 1   
+C51 COMPILER V9.60.0.0   MAIN                                                              03/30/2022 14:34:58 PAGE 1   
 
 
 C51 COMPILER V9.60.0.0, COMPILATION OF MODULE MAIN
@@ -30,7 +30,7 @@ line level    source
   14          uint16_t adc_value_current = 0x0000;
   15          uint16_t hall_value  = 0x0000;
   16          uint16_t u16PWMDutyValue;
-  17          uint8_t i;
+  17          uint8_t i,dir = 0;
   18          /*--------------------------------------------------------------------------------------------------------
              --*/
   19          /* Function                                                                                               
@@ -53,503 +53,513 @@ line level    source
   34          long map(long x, long in_min, long in_max, long out_min, long out_max);
   35          void Check_WDT_Reset_Config(void);
   36          void WDT_config(void);
-  37           
-  38          /*--------------------------------------------------------------------------------------------------------
+  37          /*--------------------------------------------------------------------------------------------------------
              --*/
-  39          /* Main                                                                                                   
+  38          /* Main                                                                                                   
              - */
-  40          /*--------------------------------------------------------------------------------------------------------
+  39          /*--------------------------------------------------------------------------------------------------------
              --*/
-  41          int main()
-  42          {
-C51 COMPILER V9.60.0.0   MAIN                                                              03/29/2022 17:56:05 PAGE 2   
+  40          int main()
+  41          {
+  42   1        //-------- Initial Peripherals--------------
+C51 COMPILER V9.60.0.0   MAIN                                                              03/30/2022 14:34:58 PAGE 2   
 
-  43   1        //-------- Initial Peripherals--------------
-  44   1      //  InitialUART0_Timer3(115200);
-  45   1        InitGPIO();
-  46   1        //------------Bootstrap-----------
-  47   1        PWM_H_A = 0;PWM_H_B = 0;PWM_H_C = 0;
-  48   1        for ( i=0;i<100;i++)
-  49   1        {
-  50   2          PWM_L_A = 1; PWM_L_B = 1; PWM_L_C = 1; Timer0_Delay1ms(10);
-  51   2          PWM_L_A = 0; PWM_L_B = 0; PWM_L_C = 0; Timer0_Delay1ms(10);
-  52   2        }
-  53   1        //--------Init PWM--------------
-  54   1        PWM_Complementary_Init();
-  55   1        FB_PWM_Init();
-  56   1        
-  57   1        PWM_DEAD_TIME_VALUE(32);
-  58   1        PWM01_DEADTIME_ENABLE;
-  59   1        PWM45_DEADTIME_ENABLE;
-  60   1        PWM34_DEADTIME_ENABLE;
-  61   1        PWM_duty(50);
-  62   1        
-  63   1        //--------Init TIMER--------------
-  64   1        InitTimer0();
-  65   1        InitTimer1();
-  66   1        InitTimer2forCapture();
-  67   1        
-  68   1        //--------Init WDT--------------
-  69   1      //  Check_WDT_Reset_Config();
-  70   1      //  WDT_config();
-  71   1      //  set_WDTR; 
-  72   1      //  set_WDCLR;
-  73   1      
-  74   1        //--------ADC start run--------------
-  75   1        set_ADCS;                 // Start ADC 
-  76   1        
-  77   1        //-------- PWM start run--------------
-  78   1        set_EPWM;                 //Enable PWM interrupt
-  79   1        set_EFB;
-  80   1        set_EA;                 
-  81   1        set_LOAD;
-  82   1        set_PWMRUN;
-  83   1        
-  84   1        while(1)
-  85   1        {   
-  86   2      //    ADC_targetspeed();
-  87   2      ////    // Channel 0 - P17
-  88   2      //    u16PWMDutyValue = map(adc_value_target_speed, 0, 4095, 0, 76);
-  89   2      //      if(u16PWMDutyValue>10)
-  90   2      //  {
-  91   2      //    set_PWMRUN;
-  92   2      //    PWM_duty(u16PWMDutyValue);
-  93   2      //      set_PWMRUN;
-  94   2      //  }
-  95   2      //  else 
-  96   2      //  {
-  97   2      //    clr_PWMRUN;
-  98   2      //  }
-  99   2            
- 100   2      //    printf ("\n Target Speed Value = %d",u16PWMDutyValue);  // Read u16PWMDutyValue
- 101   2      //    //printf ("\n Target Speed Value = %d",adc_value_target_speed);
- 102   2      //    ADC_voltage();                                          // Channel 4 - P04  
- 103   2      //    //printf ("\n Voltage value = %d",adc_value_vin);                
- 104   2      //    
-C51 COMPILER V9.60.0.0   MAIN                                                              03/29/2022 17:56:05 PAGE 3   
+  43   1      //  InitialUART0_Timer3(115200);
+  44   1        InitGPIO();
+  45   1        //------------Bootstrap-----------
+  46   1        PWM_H_A = 0;PWM_H_B = 0;PWM_H_C = 0;
+  47   1        for ( i=0;i<100;i++)
+  48   1        {
+  49   2          PWM_L_A = 1; PWM_L_B = 1; PWM_L_C = 1; Timer0_Delay1ms(10);
+  50   2          PWM_L_A = 0; PWM_L_B = 0; PWM_L_C = 0; Timer0_Delay1ms(10);
+  51   2        }
+  52   1        //--------Init PWM--------------
+  53   1        PWM_Complementary_Init();
+  54   1        FB_PWM_Init();
+  55   1        
+  56   1        PWM_DEAD_TIME_VALUE(32);
+  57   1        PWM01_DEADTIME_ENABLE;
+  58   1        PWM45_DEADTIME_ENABLE;
+  59   1        PWM34_DEADTIME_ENABLE;
+  60   1        PWM_duty(50);
+  61   1        
+  62   1        //--------Init TIMER--------------
+  63   1        InitTimer0();
+  64   1        InitTimer1();
+  65   1        InitTimer2forCapture();
+  66   1        
+  67   1        //--------Init WDT--------------
+  68   1      //  Check_WDT_Reset_Config();
+  69   1      //  WDT_config();
+  70   1      //  set_WDTR; 
+  71   1      //  set_WDCLR;
+  72   1      
+  73   1        //--------ADC start run--------------
+  74   1        set_ADCS;                 // Start ADC 
+  75   1        
+  76   1        //-------- PWM start run--------------
+  77   1        set_EPWM;                 //Enable PWM interrupt
+  78   1        set_EFB;
+  79   1        set_EA;                 
+  80   1        set_LOAD;
+  81   1        set_PWMRUN;
+  82   1        
+  83   1        while(1)
+  84   1        {   
+  85   2      //    if (DIR_PIN == 0) 
+  86   2      //    {
+  87   2      //      Timer0_Delay1ms(5);
+  88   2      //      if( DIR_PIN == 0)
+  89   2      //      {
+  90   2      //        if (dir == 0) dir = 1;
+  91   2      //        else dir = 0;
+  92   2      //        while(DIR_PIN == 0);
+  93   2      //      }
+  94   2      //    }
+  95   2      //    ADC_targetspeed();
+  96   2      ////    // Channel 0 - P17
+  97   2      //    u16PWMDutyValue = map(adc_value_target_speed, 0, 4095, 0, 76);
+  98   2      //      if(u16PWMDutyValue>10)
+  99   2      //  {
+ 100   2      //    set_PWMRUN;
+ 101   2      //    PWM_duty(u16PWMDutyValue);
+ 102   2      //      set_PWMRUN;
+ 103   2      //  }
+ 104   2      //  else 
+C51 COMPILER V9.60.0.0   MAIN                                                              03/30/2022 14:34:58 PAGE 3   
 
- 105   2      //    //ADC_current();                                          // Channel 5 - P06
- 106   2      //    printf ("\n Current value = %d",adc_value_current);
- 107   2      //    Timer0_Delay1ms(200);
- 108   2      //    //    
- 109   2      //    //ChangeMotorPhaseClockwise();   
- 110   2      //    //ChangeMotorPhaseCounterClockwise();
- 111   2      //    if (g_u16CurrentSpeed > 4000) {g_u16CurrentSpeed = 4000;}
- 112   2      //    printf ("\n Current Speed = %d",g_u16CurrentSpeed);
- 113   2      //    g_u16CurrentSpeed = 0;
- 114   2          //ChangeMotorPhaseClockwise();
- 115   2          //set_WDCLR;    
- 116   2        }
- 117   1      }
- 118          
- 119          /*****************************************CONFIGUARE******************************************************
+ 105   2      //  {
+ 106   2      //    clr_PWMRUN;
+ 107   2      //  }
+ 108   2            
+ 109   2      //    printf ("\n Target Speed Value = %d",u16PWMDutyValue);  // Read u16PWMDutyValue
+ 110   2      //    //printf ("\n Target Speed Value = %d",adc_value_target_speed);
+ 111   2      //    ADC_voltage();                                          // Channel 4 - P04  
+ 112   2      //    //printf ("\n Voltage value = %d",adc_value_vin);                
+ 113   2      //    
+ 114   2      //    //ADC_current();                                          // Channel 5 - P06
+ 115   2      //    printf ("\n Current value = %d",adc_value_current);
+ 116   2      //    Timer0_Delay1ms(200);
+ 117   2      //    //    
+ 118   2      //    //ChangeMotorPhaseClockwise();   
+ 119   2      //    //ChangeMotorPhaseCounterClockwise();
+ 120   2      //    if (g_u16CurrentSpeed > 4000) {g_u16CurrentSpeed = 4000;}
+ 121   2      //    printf ("\n Current Speed = %d",g_u16CurrentSpeed);
+ 122   2      //    g_u16CurrentSpeed = 0;
+ 123   2          //ChangeMotorPhaseClockwise();
+ 124   2          //set_WDCLR;    
+ 125   2        }
+ 126   1      }
+ 127          
+ 128          /*****************************************CONFIGUARE******************************************************
              -*/
- 120          
- 121          /*--------------------------------------------------------------------------------------------------------
+ 129          
+ 130          /*--------------------------------------------------------------------------------------------------------
              --*/
- 122          /* Init GPIO                                                                                              
+ 131          /* Init GPIO                                                                                              
              - */
- 123          /*--------------------------------------------------------------------------------------------------------
+ 132          /*--------------------------------------------------------------------------------------------------------
              --*/
- 124          void InitGPIO(void)
- 125          {
- 126   1          /* Use Uart0 TX: P06 RX: P07*/
- 127   1          /* Hall sensor */
- 128   1          P30_Input_Mode;  // Input only mode
- 129   1          P16_Input_Mode;  // Input only mode
- 130   1          P15_Input_Mode;  // Input only mode
- 131   1        
- 132   1          /* PWM */
- 133   1          P12_PushPull_Mode;        // HA
- 134   1          P11_PushPull_Mode;        // LA
- 135   1          P10_PushPull_Mode;        // HB
- 136   1          P00_PushPull_Mode;        // LB
- 137   1          P01_PushPull_Mode;        // HC
- 138   1          P03_PushPull_Mode;        // LC
- 139   1      
- 140   1          /* Fault Brake Pin - OCP/DIS Function */
- 141   1          P14_Input_Mode;   
- 142   1      
- 143   1          /* Pulse Signal Output */
- 144   1          P13_PushPull_Mode;
- 145   1          
- 146   1      }
- 147          /*--------------------------------------------------------------------------------------------------------
+ 133          void InitGPIO(void)
+ 134          {
+ 135   1          /* Use Uart0 TX: P06 RX: P07*/
+ 136   1          /* Hall sensor */
+ 137   1          P30_Input_Mode;  // Input only mode
+ 138   1          P16_Input_Mode;  // Input only mode
+ 139   1          P15_Input_Mode;  // Input only mode
+ 140   1        
+ 141   1          /* PWM */
+ 142   1          P12_PushPull_Mode;        // HA
+ 143   1          P11_PushPull_Mode;        // LA
+ 144   1          P10_PushPull_Mode;        // HB
+ 145   1          P00_PushPull_Mode;        // LB
+ 146   1          P01_PushPull_Mode;        // HC
+ 147   1          P03_PushPull_Mode;        // LC
+ 148   1      
+ 149   1          /* Fault Brake Pin - OCP/DIS Function */
+ 150   1          P14_Input_Mode;   
+ 151   1      
+ 152   1          /* Pulse Signal Output */
+ 153   1          P13_PushPull_Mode;
+ 154   1          
+ 155   1      }
+ 156          /*--------------------------------------------------------------------------------------------------------
              --*/
- 148          /* Init PWM                                                                                               
+ 157          /* Init PWM                                                                                               
              - */
- 149          /*--------------------------------------------------------------------------------------------------------
+ 158          /*--------------------------------------------------------------------------------------------------------
              --*/
- 150          void PWM_Complementary_Init(void)
- 151          {
- 152   1        PWM0_P12_OUTPUT_ENABLE;
- 153   1        PWM1_P11_OUTPUT_ENABLE;
- 154   1        PWM2_P10_OUTPUT_ENABLE;
- 155   1        PWM3_P00_OUTPUT_ENABLE;
- 156   1        PWM4_P01_OUTPUT_ENABLE;
- 157   1        PWM5_P03_OUTPUT_ENABLE;
- 158   1        /*PMW clock source select define*/
- 159   1        PWM_GP_MODE_ENABLE;
-C51 COMPILER V9.60.0.0   MAIN                                                              03/29/2022 17:56:05 PAGE 4   
+ 159          void PWM_Complementary_Init(void)
+C51 COMPILER V9.60.0.0   MAIN                                                              03/30/2022 14:34:58 PAGE 4   
 
- 160   1        PWM_CLOCK_DIV_4;
- 161   1        /*PWM type define*/
- 162   1        PWM_CENTER_TYPE;
- 163   1        /*PWM mode define*/
- 164   1        PWM_COMPLEMENTARY_MODE;
- 165   1        /* PWM interrupt pin select */
- 166   1        PWM_INT_PWM0;
- 167   1        /* PMW interrupt setting */
- 168   1        PWM_PERIOD_END_INT;
- 169   1        /*clear PWM 12bit counter*/
- 170   1        set_CLRPWM;
- 171   1        /**********************************************************************
- 172   1        PWM frequency = Fpwm/((PWMPH,PWMPL)*2) < Fpwm = Fsys/PWM_CLOCK_DIV> 
- 173   1                      = (16MHz/8)/(0x3E8 * 2)
- 174   1                      = 1KHz (1ms)
- 175   1        ***********************************************************************/
- 176   1          PWMPH = 0x00;
- 177   1          PWMPL = 0x64;
- 178   1        /* Initialize the pwm pin mode and close whole MOS. */
- 179   1          PMEN = 0xff;
- 180   1          PMD = 0x00;
- 181   1      }
- 182          void PWM_duty(uint16_t value)
- 183          {
- 184   1        PWM0H = HIBYTE(value);
- 185   1        PWM0L = LOBYTE(value);
- 186   1        set_LOAD;
- 187   1      }
- 188          void FB_PWM_Init(void)
- 189          {
- 190   1        set_FBINEN;    //FB Pin Input Enable
- 191   1        clr_FBINLS;    //Rising edge
- 192   1      }
- 193          /*--------------------------------------------------------------------------------------------------------
+ 160          {
+ 161   1        PWM0_P12_OUTPUT_ENABLE;
+ 162   1        PWM1_P11_OUTPUT_ENABLE;
+ 163   1        PWM2_P10_OUTPUT_ENABLE;
+ 164   1        PWM3_P00_OUTPUT_ENABLE;
+ 165   1        PWM4_P01_OUTPUT_ENABLE;
+ 166   1        PWM5_P03_OUTPUT_ENABLE;
+ 167   1        /*PMW clock source select define*/
+ 168   1        PWM_GP_MODE_ENABLE;
+ 169   1        PWM_CLOCK_DIV_4;
+ 170   1        /*PWM type define*/
+ 171   1        PWM_CENTER_TYPE;
+ 172   1        /*PWM mode define*/
+ 173   1        PWM_COMPLEMENTARY_MODE;
+ 174   1        /* PWM interrupt pin select */
+ 175   1        PWM_INT_PWM0;
+ 176   1        /* PMW interrupt setting */
+ 177   1        PWM_PERIOD_END_INT;
+ 178   1        /*clear PWM 12bit counter*/
+ 179   1        set_CLRPWM;
+ 180   1        /**********************************************************************
+ 181   1        PWM frequency = Fpwm/((PWMPH,PWMPL)*2) < Fpwm = Fsys/PWM_CLOCK_DIV> 
+ 182   1                      = (16MHz/8)/(0x3E8 * 2)
+ 183   1                      = 1KHz (1ms)
+ 184   1        ***********************************************************************/
+ 185   1          PWMPH = 0x00;
+ 186   1          PWMPL = 0x64;
+ 187   1        /* Initialize the pwm pin mode and close whole MOS. */
+ 188   1          PMEN = 0xff;
+ 189   1          PMD = 0x00;
+ 190   1      }
+ 191          void PWM_duty(uint16_t value)
+ 192          {
+ 193   1        PWM0H = HIBYTE(value);
+ 194   1        PWM0L = LOBYTE(value);
+ 195   1        set_LOAD;
+ 196   1      }
+ 197          void FB_PWM_Init(void)
+ 198          {
+ 199   1        set_FBINEN;    //FB Pin Input Enable
+ 200   1        clr_FBINLS;    //Rising edge
+ 201   1      }
+ 202          /*--------------------------------------------------------------------------------------------------------
              ----------
- 194            Dead time       = 0x20 <PDTEN.4+PDTCNT[7:0]>/Fsys = 0x20/Fsys =32/16000000 = 2 us (max value)
- 195          ----------------------------------------------------------------------------------------------------------
+ 203            Dead time       = 0x20 <PDTEN.4+PDTCNT[7:0]>/Fsys = 0x20/Fsys =32/16000000 = 2 us (max value)
+ 204          ----------------------------------------------------------------------------------------------------------
              --------*/
- 196          void PWM_DEAD_TIME_VALUE(UINT16 DeadTimeData)
- 197          {
- 198   1        UINT8 deadtmphigh,deadtmplow;
- 199   1        deadtmplow = DeadTimeData;
- 200   1        deadtmphigh = DeadTimeData>>8;
- 201   1        BIT_TMP = EA;
- 202   1        if (deadtmphigh==0x01)
- 203   1        {
- 204   2          EA = 0;
- 205   2          TA = 0xAA;
- 206   2          TA = 0x55;
- 207   2          PDTEN|=0x10;
- 208   2        }
- 209   1        TA = 0xAA;
- 210   1        TA = 0x55;
- 211   1        PDTCNT = deadtmplow;
- 212   1        EA = BIT_TMP;
- 213   1      }
- 214          
- 215          /*--------------------------------------------------------------------------------------------------------
+ 205          void PWM_DEAD_TIME_VALUE(UINT16 DeadTimeData)
+ 206          {
+ 207   1        UINT8 deadtmphigh,deadtmplow;
+ 208   1        deadtmplow = DeadTimeData;
+ 209   1        deadtmphigh = DeadTimeData>>8;
+ 210   1        BIT_TMP = EA;
+ 211   1        if (deadtmphigh==0x01)
+ 212   1        {
+ 213   2          EA = 0;
+ 214   2          TA = 0xAA;
+ 215   2          TA = 0x55;
+ 216   2          PDTEN|=0x10;
+ 217   2        }
+ 218   1        TA = 0xAA;
+ 219   1        TA = 0x55;
+C51 COMPILER V9.60.0.0   MAIN                                                              03/30/2022 14:34:58 PAGE 5   
+
+ 220   1        PDTCNT = deadtmplow;
+ 221   1        EA = BIT_TMP;
+ 222   1      }
+ 223          
+ 224          /*--------------------------------------------------------------------------------------------------------
              --*/
- 216          /* Init timer                                                                                             
+ 225          /* Init timer                                                                                             
              - */
- 217          /*--------------------------------------------------------------------------------------------------------
-C51 COMPILER V9.60.0.0   MAIN                                                              03/29/2022 17:56:05 PAGE 5   
-
+ 226          /*--------------------------------------------------------------------------------------------------------
              --*/
- 218          void InitTimer0(void)
- 219          {
- 220   1          clr_T0M;        /* T0M=0, Timer0 Clock = Fsys/12 */
- 221   1          TMOD |= 0x01;   /* Timer0 is 16-bit mode */
- 222   1          
- 223   1          /* Calculate the timer counter value for controlling the interrupt period on 10ms. */
- 224   1          TL0 = LOBYTE(TIMER_DIV12_VALUE_10ms); //Find  define in "Function_define.h" "TIMER VALUE"
- 225   1          TH0 = HIBYTE(TIMER_DIV12_VALUE_10ms);
- 226   1      
- 227   1          set_ET0;        /* enable Timer0 interrupt */
- 228   1          set_EA;
- 229   1          set_TR0;        /* Timer0 start */
- 230   1      }
- 231          void InitTimer1(void)
- 232          {
- 233   1          clr_T1M;        /* T1M=0, Timer0 Clock = Fsys/12 */
- 234   1          TMOD |= (1 << 4);
- 235   1          TMOD &= ~(1 << 5);
- 236   1          
- 237   1          /* Calculate the timer counter value for controlling the interrupt period on 10ms. */
- 238   1          TL1 = LOBYTE(TIMER_DIV12_VALUE_1ms);  //Find  define in "Function_define.h" "TIMER VALUE"
- 239   1          TH1 = HIBYTE(TIMER_DIV12_VALUE_1ms);
- 240   1      
- 241   1          set_ET1;        /* enable Timer0 interrupt */
- 242   1          set_EA;
- 243   1          set_TR1;        /* Timer0 start */
- 244   1      }
- 245          void InitTimer2forCapture(void)
- 246          {
- 247   1          /* Initial the Timer2 for capture motor speed */
- 248   1          TIMER2_CAP0_Capture_Mode;
- 249   1          IC7_P15_CAP0_RisingEdge_Capture;;
- 250   1          TIMER2_DIV_512;
- 251   1          /* Enable Capture interrupt */
- 252   1          set_ECAP;
- 253   1          /* Triger Timer2 */
- 254   1          set_TR2;
- 255   1      }
- 256          /*--------------------------------------------------------------------------------------------------------
+ 227          void InitTimer0(void)
+ 228          {
+ 229   1          clr_T0M;        /* T0M=0, Timer0 Clock = Fsys/12 */
+ 230   1          TMOD |= 0x01;   /* Timer0 is 16-bit mode */
+ 231   1          
+ 232   1          /* Calculate the timer counter value for controlling the interrupt period on 10ms. */
+ 233   1          TL0 = LOBYTE(TIMER_DIV12_VALUE_10ms); //Find  define in "Function_define.h" "TIMER VALUE"
+ 234   1          TH0 = HIBYTE(TIMER_DIV12_VALUE_10ms);
+ 235   1      
+ 236   1          set_ET0;        /* enable Timer0 interrupt */
+ 237   1          set_EA;
+ 238   1          set_TR0;        /* Timer0 start */
+ 239   1      }
+ 240          void InitTimer1(void)
+ 241          {
+ 242   1          clr_T1M;        /* T1M=0, Timer0 Clock = Fsys/12 */
+ 243   1          TMOD |= (1 << 4);
+ 244   1          TMOD &= ~(1 << 5);
+ 245   1          
+ 246   1          /* Calculate the timer counter value for controlling the interrupt period on 10ms. */
+ 247   1          TL1 = LOBYTE(TIMER_DIV12_VALUE_1ms);  //Find  define in "Function_define.h" "TIMER VALUE"
+ 248   1          TH1 = HIBYTE(TIMER_DIV12_VALUE_1ms);
+ 249   1      
+ 250   1          set_ET1;        /* enable Timer0 interrupt */
+ 251   1          set_EA;
+ 252   1          set_TR1;        /* Timer0 start */
+ 253   1      }
+ 254          void InitTimer2forCapture(void)
+ 255          {
+ 256   1          /* Initial the Timer2 for capture motor speed */
+ 257   1          TIMER2_CAP0_Capture_Mode;
+ 258   1          IC7_P15_CAP0_RisingEdge_Capture;;
+ 259   1          TIMER2_DIV_512;
+ 260   1          /* Enable Capture interrupt */
+ 261   1          set_ECAP;
+ 262   1          /* Triger Timer2 */
+ 263   1          set_TR2;
+ 264   1      }
+ 265          /*--------------------------------------------------------------------------------------------------------
              --*/
- 257          /* Init ADC                                                                                               
+ 266          /* Init ADC                                                                                               
              - */
- 258          /*--------------------------------------------------------------------------------------------------------
+ 267          /*--------------------------------------------------------------------------------------------------------
              --*/
- 259          void ADC_targetspeed(void)
- 260          { 
- 261   1        Enable_ADC_AIN0;
- 262   1        clr_ADCF;              
- 263   1        set_ADCS;
- 264   1        while(ADCF == 0);
- 265   1        adc_value_target_speed = ADCRH;
- 266   1        adc_value_target_speed <<= 4;
- 267   1        adc_value_target_speed |= ADCRL;    
- 268   1        Disable_ADC;
- 269   1        //printf ("\n Target Speed Value = %d",adc_value_target_speed);  
- 270   1      }
- 271          
- 272          void ADC_voltage(void)
- 273          { 
- 274   1        Enable_ADC_AIN5;
- 275   1        clr_ADCF;              
-C51 COMPILER V9.60.0.0   MAIN                                                              03/29/2022 17:56:05 PAGE 6   
+ 268          void ADC_targetspeed(void)
+ 269          { 
+ 270   1        Enable_ADC_AIN0;
+ 271   1        clr_ADCF;              
+ 272   1        set_ADCS;
+ 273   1        while(ADCF == 0);
+ 274   1        adc_value_target_speed = ADCRH;
+ 275   1        adc_value_target_speed <<= 4;
+C51 COMPILER V9.60.0.0   MAIN                                                              03/30/2022 14:34:58 PAGE 6   
 
- 276   1        set_ADCS;
- 277   1        while(ADCF == 0);
- 278   1        ADCMPL = 0xC;
- 279   1        ADCMPH = 0x5D;            // Threshold = 1500
- 280   1        ADCCON2 |= 0xA0;          // ADC Result Comparator Enable & ADC Compare Result Asserting Fault Brake Enable
- 281   1        adc_value = ADCRH;
- 282   1        adc_value <<= 4;
- 283   1        adc_value |= ADCRL;   
- 284   1        ADCCON2 =0;
- 285   1        adc_value_vin = adc_value;
- 286   1        Disable_ADC;
- 287   1        printf ("\n Voltage value = %d",adc_value_vin);
- 288   1      }
- 289          
- 290          void ADC_current(void)
- 291          {
- 292   1        Enable_ADC_AIN4;
- 293   1        adc_value = ADCRH;
- 294   1        adc_value <<= 4;
- 295   1        adc_value |= ADCRL;   
- 296   1        adc_value_current = adc_value;
- 297   1        clr_ADCF;              
- 298   1        set_ADCS;
- 299   1      }
- 300          
- 301          void ChangeMotorPhaseClockwise(void)
- 302          {
- 303   1          hall_value = P15;
- 304   1          hall_value<<=1;
- 305   1          hall_value |= P16;
- 306   1          hall_value<<=1;
- 307   1          hall_value |= P30;
- 308   1        
- 309   1          /* Change motor phase to next phase. */
- 310   1          //printf ("\n hall value = %d",hall_value);
- 311   1          switch (hall_value)
- 312   1          {
- 313   2              case 6:
- 314   2              {
- 315   3                  PMEN = 0xfc;
- 316   3                  PMD = 0x20;
- 317   3                  break;
- 318   3              }
- 319   2              case 4:
- 320   2              {
- 321   3                  PMEN = 0xf3;
- 322   3                  PMD = 0x20;
- 323   3                  break;
- 324   3              }
- 325   2              case 5:
- 326   2              {
- 327   3                  PMEN = 0xf3;
- 328   3                  PMD = 0x02;
- 329   3                  break;
- 330   3              }
- 331   2              case 1:
- 332   2              {
- 333   3                  PMEN = 0xcf;
- 334   3                  PMD = 0x02;
- 335   3                  break;
- 336   3              }
- 337   2              case 3: 
-C51 COMPILER V9.60.0.0   MAIN                                                              03/29/2022 17:56:05 PAGE 7   
+ 276   1        adc_value_target_speed |= ADCRL;    
+ 277   1        Disable_ADC;
+ 278   1        //printf ("\n Target Speed Value = %d",adc_value_target_speed);  
+ 279   1      }
+ 280          
+ 281          void ADC_voltage(void)
+ 282          { 
+ 283   1        Enable_ADC_AIN5;
+ 284   1        clr_ADCF;              
+ 285   1        set_ADCS;
+ 286   1        while(ADCF == 0);
+ 287   1        ADCMPL = 0xC;
+ 288   1        ADCMPH = 0x5D;            // Threshold = 1500
+ 289   1        ADCCON2 |= 0xA0;          // ADC Result Comparator Enable & ADC Compare Result Asserting Fault Brake Enable
+ 290   1        adc_value = ADCRH;
+ 291   1        adc_value <<= 4;
+ 292   1        adc_value |= ADCRL;   
+ 293   1        ADCCON2 =0;
+ 294   1        adc_value_vin = adc_value;
+ 295   1        Disable_ADC;
+ 296   1        printf ("\n Voltage value = %d",adc_value_vin);
+ 297   1      }
+ 298          
+ 299          void ADC_current(void)
+ 300          {
+ 301   1        Enable_ADC_AIN4;
+ 302   1        adc_value = ADCRH;
+ 303   1        adc_value <<= 4;
+ 304   1        adc_value |= ADCRL;   
+ 305   1        adc_value_current = adc_value;
+ 306   1        clr_ADCF;              
+ 307   1        set_ADCS;
+ 308   1      }
+ 309          
+ 310          void ChangeMotorPhaseClockwise(void)
+ 311          {
+ 312   1          hall_value = P15;
+ 313   1          hall_value<<=1;
+ 314   1          hall_value |= P16;
+ 315   1          hall_value<<=1;
+ 316   1          hall_value |= P30;
+ 317   1        
+ 318   1          /* Change motor phase to next phase. */
+ 319   1          //printf ("\n hall value = %d",hall_value);
+ 320   1          switch (hall_value)
+ 321   1          {
+ 322   2              case 6:
+ 323   2              {
+ 324   3                  PMEN = 0xfc;
+ 325   3                  PMD = 0x20;
+ 326   3                  break;
+ 327   3              }
+ 328   2              case 4:
+ 329   2              {
+ 330   3                  PMEN = 0xf3;
+ 331   3                  PMD = 0x20;
+ 332   3                  break;
+ 333   3              }
+ 334   2              case 5:
+ 335   2              {
+ 336   3                  PMEN = 0xf3;
+ 337   3                  PMD = 0x02;
+C51 COMPILER V9.60.0.0   MAIN                                                              03/30/2022 14:34:58 PAGE 7   
 
- 338   2              {
- 339   3                  PMEN = 0xcf;
- 340   3                  PMD = 0x08;
- 341   3                  break;
- 342   3              }
- 343   2              case 2:
- 344   2              {
- 345   3                  PMEN = 0xfc;
- 346   3                  PMD = 0x08;
- 347   3                  break;
- 348   3              }
- 349   2          }
- 350   1      }
- 351          
- 352          
- 353          void ChangeMotorPhaseCounterClockwise(void)
- 354          {
- 355   1          hall_value = P15;
- 356   1          hall_value<<=1;
- 357   1          hall_value |= P16;
- 358   1          hall_value<<=1;
- 359   1          hall_value |= P30;
- 360   1        
- 361   1          /* Change motor phase to next phase. */
- 362   1          //printf ("\n hall value = %d",hall_value);
- 363   1          switch (hall_value)
- 364   1          {
- 365   2               case 1:
- 366   2              {
- 367   3                  PMEN = 0xfc;
- 368   3                  PMD = 0x20;
- 369   3                  break;
- 370   3              }
- 371   2              case 3:
- 372   2              {
- 373   3                  PMEN = 0xf3;
- 374   3                  PMD = 0x20;
- 375   3                  break;
- 376   3              }
- 377   2              case 2:
- 378   2              {
- 379   3                  PMEN = 0xf3;
- 380   3                  PMD = 0x02;
- 381   3                  break;
- 382   3              }
- 383   2              case 6:
- 384   2              {
- 385   3                  PMEN = 0xcf;
- 386   3                  PMD = 0x02;
- 387   3                  break;
- 388   3              }
- 389   2              case 4: 
- 390   2              {
- 391   3                  PMEN = 0xcf;
- 392   3                  PMD = 0x08;
- 393   3                  break;
- 394   3              }
- 395   2              case 5:
- 396   2              {
- 397   3                  PMEN = 0xfc;
- 398   3                  PMD = 0x08;
- 399   3                  break;
-C51 COMPILER V9.60.0.0   MAIN                                                              03/29/2022 17:56:05 PAGE 8   
+ 338   3                  break;
+ 339   3              }
+ 340   2              case 1:
+ 341   2              {
+ 342   3                  PMEN = 0xcf;
+ 343   3                  PMD = 0x02;
+ 344   3                  break;
+ 345   3              }
+ 346   2              case 3: 
+ 347   2              {
+ 348   3                  PMEN = 0xcf;
+ 349   3                  PMD = 0x08;
+ 350   3                  break;
+ 351   3              }
+ 352   2              case 2:
+ 353   2              {
+ 354   3                  PMEN = 0xfc;
+ 355   3                  PMD = 0x08;
+ 356   3                  break;
+ 357   3              }
+ 358   2          }
+ 359   1      }
+ 360          
+ 361          
+ 362          void ChangeMotorPhaseCounterClockwise(void)
+ 363          {
+ 364   1          hall_value = P15;
+ 365   1          hall_value<<=1;
+ 366   1          hall_value |= P16;
+ 367   1          hall_value<<=1;
+ 368   1          hall_value |= P30;
+ 369   1        
+ 370   1          /* Change motor phase to next phase. */
+ 371   1          //printf ("\n hall value = %d",hall_value);
+ 372   1          switch (hall_value)
+ 373   1          {
+ 374   2               case 1:
+ 375   2              {
+ 376   3                  PMEN = 0xfc;
+ 377   3                  PMD = 0x20;
+ 378   3                  break;
+ 379   3              }
+ 380   2              case 3:
+ 381   2              {
+ 382   3                  PMEN = 0xf3;
+ 383   3                  PMD = 0x20;
+ 384   3                  break;
+ 385   3              }
+ 386   2              case 2:
+ 387   2              {
+ 388   3                  PMEN = 0xf3;
+ 389   3                  PMD = 0x02;
+ 390   3                  break;
+ 391   3              }
+ 392   2              case 6:
+ 393   2              {
+ 394   3                  PMEN = 0xcf;
+ 395   3                  PMD = 0x02;
+ 396   3                  break;
+ 397   3              }
+ 398   2              case 4: 
+ 399   2              {
+C51 COMPILER V9.60.0.0   MAIN                                                              03/30/2022 14:34:58 PAGE 8   
 
- 400   3              }
- 401   2          }
- 402   1      }
- 403          /*--------------------------------------------------------------------------------------------------------
+ 400   3                  PMEN = 0xcf;
+ 401   3                  PMD = 0x08;
+ 402   3                  break;
+ 403   3              }
+ 404   2              case 5:
+ 405   2              {
+ 406   3                  PMEN = 0xfc;
+ 407   3                  PMD = 0x08;
+ 408   3                  break;
+ 409   3              }
+ 410   2          }
+ 411   1      }
+ 412          /*--------------------------------------------------------------------------------------------------------
              --*/
- 404          /* Interrupt                                                                                              
+ 413          /* Interrupt                                                                                              
              - */
- 405          /*--------------------------------------------------------------------------------------------------------
+ 414          /*--------------------------------------------------------------------------------------------------------
              --*/
- 406          void Timer0_ISR (void) interrupt 1           /*interrupt address is 0x000B */
- 407          {
- 408   1          TL0 = LOBYTE(TIMER_DIV12_VALUE_10ms); //Find  define in "Function_define.h" "TIMER VALUE"
- 409   1          TH0 = HIBYTE(TIMER_DIV12_VALUE_10ms);
- 410   1          /* Your code */
- 411   1          //P14 = ~P14; /* GPIO toggle when interrupt  */
- 412   1          //P13 =~ P13 ;        /* GPIO toggle when interrupt  */
- 413   1          TF0 = 0 ;
- 414   1      }
- 415          void TIM1_ISR(void) interrupt 3
+ 415          void Timer0_ISR (void) interrupt 1           /*interrupt address is 0x000B */
  416          {
- 417   1          TL1 = LOBYTE(TIMER_DIV12_VALUE_1ms);  //Find  define in "Function_define.h" "TIMER VALUE"
- 418   1          TH1 = HIBYTE(TIMER_DIV12_VALUE_1ms);
+ 417   1          TL0 = LOBYTE(TIMER_DIV12_VALUE_10ms); //Find  define in "Function_define.h" "TIMER VALUE"
+ 418   1          TH0 = HIBYTE(TIMER_DIV12_VALUE_10ms);
  419   1          /* Your code */
- 420   1          //P13 =~ P13 ;        /* GPIO toggle when interrupt  */
- 421   1        
- 422   1          TF1 = 0 ;
+ 420   1          //P14 = ~P14; /* GPIO toggle when interrupt  */
+ 421   1          //P13 =~ P13 ;        /* GPIO toggle when interrupt  */
+ 422   1          TF0 = 0 ;
  423   1      }
- 424          
- 425          void Capture_ISR(void) interrupt 12
- 426          {
- 427   1      //    /* Clear capture0 interrupt flag */
- 428   1      //    clr_CAPF0;
- 429   1      //    u16_periodhall = (C0L + (C0H << 8))*(1/31250);
- 430   1      //    /* Get the current motor speed */
- 431   1      //    g_u16CurrentSpeed = 60/u16_periodhall ;
- 432   1      
- 433   1      //    clr_TF2;
- 434   1          /* Clear capture0 interrupt flag */
- 435   1          clr_CAPF0;
- 436   1          /* Get the current motor speed */
- 437   1          g_u16CurrentSpeedTemp = (C0L + (C0H << 8))*0.000032;
- 438   1          g_u16CurrentSpeed = 60/(g_u16CurrentSpeedTemp*2);
- 439   1          C0L = 0; C0H = 0;
- 440   1          clr_TF2;
- 441   1      }
- 442          void FB_ISR(void) interrupt 14
- 443          { 
- 444   1        clr_FBF;
- 445   1        
- 446   1      }
- 447          
- 448          void PWM_ISR (void) interrupt 13
- 449          {
- 450   1      
- 451   1          clr_PWMF;               // clear PWM interrupt flag
- 452   1        //  ADC_current();    
- 453   1      
- 454   1        //ChangeMotorPhaseClockwise();  // Channel 5 - P06
- 455   1        ChangeMotorPhaseCounterClockwise();
- 456   1        //ChangeMotorPhaseClockwiseNotInv();
- 457   1      }
- 458          long map(long x, long in_min, long in_max, long out_min, long out_max) {
-C51 COMPILER V9.60.0.0   MAIN                                                              03/29/2022 17:56:05 PAGE 9   
+ 424          void TIM1_ISR(void) interrupt 3
+ 425          {
+ 426   1          TL1 = LOBYTE(TIMER_DIV12_VALUE_1ms);  //Find  define in "Function_define.h" "TIMER VALUE"
+ 427   1          TH1 = HIBYTE(TIMER_DIV12_VALUE_1ms);
+ 428   1          /* Your code */
+ 429   1          //P13 =~ P13 ;        /* GPIO toggle when interrupt  */
+ 430   1        
+ 431   1          TF1 = 0 ;
+ 432   1      }
+ 433          
+ 434          void Capture_ISR(void) interrupt 12
+ 435          {
+ 436   1      //    /* Clear capture0 interrupt flag */
+ 437   1      //    clr_CAPF0;
+ 438   1      //    u16_periodhall = (C0L + (C0H << 8))*(1/31250);
+ 439   1      //    /* Get the current motor speed */
+ 440   1      //    g_u16CurrentSpeed = 60/u16_periodhall ;
+ 441   1      
+ 442   1      //    clr_TF2;
+ 443   1          /* Clear capture0 interrupt flag */
+ 444   1          clr_CAPF0;
+ 445   1          /* Get the current motor speed */
+ 446   1          g_u16CurrentSpeedTemp = (C0L + (C0H << 8))*0.000032;
+ 447   1          g_u16CurrentSpeed = 60/(g_u16CurrentSpeedTemp*2);
+ 448   1          C0L = 0; C0H = 0;
+ 449   1          clr_TF2;
+ 450   1      }
+ 451          void FB_ISR(void) interrupt 14
+ 452          { 
+ 453   1        clr_FBF;
+ 454   1        
+ 455   1      }
+ 456          
+ 457          void PWM_ISR (void) interrupt 13
+ 458          {
+C51 COMPILER V9.60.0.0   MAIN                                                              03/30/2022 14:34:58 PAGE 9   
 
- 459   1        return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
- 460   1      }
- 461          
- 462          void Check_WDT_Reset_Config(void)
- 463          {
- 464   1          set_IAPEN;
- 465   1          IAPAL = 0x04;
- 466   1          IAPAH = 0x00; 
- 467   1          IAPFD = 0xFF;
- 468   1          IAPCN = 0xC0;                                  
- 469   1          set_IAPGO;  
- 470   1          if ((IAPFD&0xF0)==0xF0)
- 471   1          {
- 472   2              IAPFD = 0x0F;
- 473   2              IAPCN = 0xE1;
- 474   2              set_IAPGO;                                    
- 475   2              while((CHPCON&SET_BIT6)==SET_BIT6);          
- 476   2              clr_CFUEN;
- 477   2              clr_IAPEN;
- 478   2              EA = 0;
- 479   2              TA = 0xAA;
- 480   2              TA = 0x55;
- 481   2              CHPCON &= 0xFD;
- 482   2              TA = 0xAA;
- 483   2              TA = 0x55;
- 484   2              CHPCON |= 0x80;
- 485   2          }
- 486   1          clr_IAPEN;
- 487   1      }
- 488          
- 489          void WDT_config(void)
- 490          {
- 491   1        TA = 0xAA;
- 492   1        TA = 0x55;
- 493   1        WDCON |= 0x07;        // config driver = 1/256 => time out = 1.638s
- 494   1        set_WDCLR;            // clr WDT counter 0
- 495   1      }
- 496          
+ 459   1      
+ 460   1          clr_PWMF;               // clear PWM interrupt flag
+ 461   1        //  ADC_current();    
+ 462   1      
+ 463   1        ChangeMotorPhaseClockwise();  // Channel 5 - P06
+ 464   1        //ChangeMotorPhaseCounterClockwise();
+ 465   1      //  if (dir == 0) ChangeMotorPhaseClockwise();
+ 466   1      //  else ChangeMotorPhaseCounterClockwise();
+ 467   1      }
+ 468          long map(long x, long in_min, long in_max, long out_min, long out_max) {
+ 469   1        return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+ 470   1      }
+ 471          
+ 472          void Check_WDT_Reset_Config(void)
+ 473          {
+ 474   1          set_IAPEN;
+ 475   1          IAPAL = 0x04;
+ 476   1          IAPAH = 0x00; 
+ 477   1          IAPFD = 0xFF;
+ 478   1          IAPCN = 0xC0;                                  
+ 479   1          set_IAPGO;  
+ 480   1          if ((IAPFD&0xF0)==0xF0)
+ 481   1          {
+ 482   2              IAPFD = 0x0F;
+ 483   2              IAPCN = 0xE1;
+ 484   2              set_IAPGO;                                    
+ 485   2              while((CHPCON&SET_BIT6)==SET_BIT6);          
+ 486   2              clr_CFUEN;
+ 487   2              clr_IAPEN;
+ 488   2              EA = 0;
+ 489   2              TA = 0xAA;
+ 490   2              TA = 0x55;
+ 491   2              CHPCON &= 0xFD;
+ 492   2              TA = 0xAA;
+ 493   2              TA = 0x55;
+ 494   2              CHPCON |= 0x80;
+ 495   2          }
+ 496   1          clr_IAPEN;
+ 497   1      }
+ 498          
+ 499          void WDT_config(void)
+ 500          {
+ 501   1        TA = 0xAA;
+ 502   1        TA = 0x55;
+ 503   1        WDCON |= 0x07;        // config driver = 1/256 => time out = 1.638s
+ 504   1        set_WDCLR;            // clr WDT counter 0
+ 505   1      }
+ 506          
 
 
 MODULE INFORMATION:   STATIC OVERLAYABLE
@@ -557,7 +567,7 @@ MODULE INFORMATION:   STATIC OVERLAYABLE
    CONSTANT SIZE    =     21    ----
    XDATA SIZE       =   ----    ----
    PDATA SIZE       =   ----    ----
-   DATA SIZE        =     21      20
+   DATA SIZE        =     22      20
    IDATA SIZE       =   ----    ----
    BIT SIZE         =   ----    ----
 END OF MODULE INFORMATION.

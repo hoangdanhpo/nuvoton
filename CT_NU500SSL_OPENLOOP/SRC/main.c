@@ -14,7 +14,7 @@ uint16_t adc_value_target_speed = 0x0000;
 uint16_t adc_value_current = 0x0000;
 uint16_t hall_value  = 0x0000;
 uint16_t u16PWMDutyValue;
-uint8_t i;
+uint8_t i,dir = 0;
 /*---------------------------------------------------------------------------------------------------------*/
 /* Function                                                                                                */
 /*---------------------------------------------------------------------------------------------------------*/
@@ -82,6 +82,16 @@ int main()
 	
 	while(1)
 	{		
+//		if (DIR_PIN == 0) 
+//		{
+//			Timer0_Delay1ms(5);
+//			if( DIR_PIN == 0)
+//			{
+//				if (dir == 0) dir = 1;
+//				else dir = 0;
+//				while(DIR_PIN == 0);
+//			}
+//		}
 //		ADC_targetspeed();
 ////		// Channel 0 - P17
 //		u16PWMDutyValue = map(adc_value_target_speed, 0, 4095, 0, 76);
@@ -450,9 +460,10 @@ void PWM_ISR (void) interrupt 13
     clr_PWMF;               // clear PWM interrupt flag
   //  ADC_current();    
 
-	//ChangeMotorPhaseClockwise(); 	// Channel 5 - P06
-	ChangeMotorPhaseCounterClockwise();
-	//ChangeMotorPhaseClockwiseNotInv();
+	ChangeMotorPhaseClockwise(); 	// Channel 5 - P06
+	//ChangeMotorPhaseCounterClockwise();
+//	if (dir == 0) ChangeMotorPhaseClockwise();
+//	else ChangeMotorPhaseCounterClockwise();
 }
 long map(long x, long in_min, long in_max, long out_min, long out_max) {
   return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
