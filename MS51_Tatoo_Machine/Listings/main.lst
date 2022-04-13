@@ -1,0 +1,404 @@
+C51 COMPILER V9.60.0.0   MAIN                                                              04/13/2022 13:58:16 PAGE 1   
+
+
+C51 COMPILER V9.60.0.0, COMPILATION OF MODULE MAIN
+OBJECT MODULE PLACED IN .\Objects\main.obj
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE SRC\main.c OPTIMIZE(8,SPEED) BROWSE INCDIR(.\INC) DEFINE(FOSC_160000) DE
+                    -BUG OBJECTEXTEND PRINT(.\Listings\main.lst) TABS(2) OBJECT(.\Objects\main.obj)
+
+line level    source
+
+   1          /* Decription:
+   2               - Padel Mode
+   3               - Continuous Mode
+   4               - Nitro Mode    
+   5               - Change Voltage
+   6               - Current          - 10A
+   7               - Sleep Mode       - 5s
+   8               - Auto Sleep mode  - 1p30s   
+   9          */
+  10          
+  11          #include "main.h"
+  12          #include "mode.h"
+  13          /*--------------------------------------------------------------------------------------------------------
+             --*/
+  14          /*Global Variable                                                                                         
+             -        */
+  15          /*--------------------------------------------------------------------------------------------------------
+             --*/
+  16          double u16_count = 5.0;
+  17          uint16_t u16_duty = 50;
+  18          uint32_t u32_duty = 0;
+  19          uint8_t u8_contStatus = 0;
+  20          uint8_t u8_pedalStatus = 0;
+  21          uint8_t u8_contpedalStatus = 0;
+  22          unsigned int adc_value = 0x0000;
+  23          uint8_t u8_mode = 0,count =0, u8_sleep = 0,u8_switch = 0, u8_cntCur = 0,u8_nitroMode = 0,u8_nitroStart = 0
+             -;
+  24          uint32_t u32_countSec = 0,u32_countMin = 0;
+  25          /*--------------------------------------------------------------------------------------------------------
+             --*/
+  26          /* Main Function                                                                                          
+             - */
+  27          /*--------------------------------------------------------------------------------------------------------
+             --*/
+  28          void main()
+  29          { 
+  30   1          HW_init();
+  31   1          u32_duty = 0;
+  32   1          PWM_duty(0);
+  33   1          u16_count = 5.0;
+  34   1          //InitialUART1_Timer3(115200);
+  35   1          while(1)
+  36   1          {
+  37   2            set_ADCS;
+  38   2            set_TR1;
+  39   2            if( adc_value > 350)
+  40   2            {
+  41   3              u8_cntCur = 0;
+  42   3            }     
+  43   2                /************ SET VOLTAGE ****************/
+  44   2                if (ENC_PIN == 0) 
+  45   2                {
+  46   3                  Timer0_Delay1ms(5);
+  47   3                  if( ENC_PIN == 0)
+C51 COMPILER V9.60.0.0   MAIN                                                              04/13/2022 13:58:16 PAGE 2   
+
+  48   3                  {
+  49   4                    if ( u8_mode == 2 && u8_nitroStart == 0)
+  50   4                    {
+  51   5                      if(u8_nitroMode == 0)
+  52   5                      {
+  53   6                        OLED_Clear();
+  54   6                        u8_mode = 3;
+  55   6                        u8_nitroStart = 0;
+  56   6                      }
+  57   5                      else
+  58   5                      {
+  59   6                        OLED_Clear();
+  60   6                        u8_nitroStart = 1;
+  61   6                      }
+  62   5                    }
+  63   4                    else if (u8_mode == 0 || u8_mode == 1 || u8_nitroStart == 1)
+  64   4                    {
+  65   5                      u32_duty = (u16_count*10);
+  66   5                      //u16_duty = u32_duty*0.5;
+  67   5                      if(u8_mode == 1 && u8_contpedalStatus == 0 && u8_sleep == 0)
+  68   5                      {
+  69   6                        PWM_duty(u32_duty);
+  70   6                      }
+  71   5                      set_PWMRUN;
+  72   5                    }
+  73   4                      /************ SLEEP MODE ****************/
+  74   4                      while(ENC_PIN == 0)
+  75   4                      {
+  76   5                        count++;
+  77   5                        Timer0_Delay1ms(1000);
+  78   5                        if(count > 3 && u8_switch == 0) 
+  79   5                        {
+  80   6                          u8_switch = 1;
+  81   6                          count = 0;
+  82   6                          if(u8_sleep == 0) 
+  83   6                          {
+  84   7                            OLED_Display_Off();
+  85   7                            u8_sleep = 1;
+  86   7                            count = 0;
+  87   7                            u32_duty = 0;
+  88   7                            PWM_duty(0);
+  89   7        //                    SW_Reset();
+  90   7                            LED_PIN = 1;
+  91   7                            P11_Input_Mode;
+  92   7                            clr_EX0;
+  93   7                          }
+  94   6                          else 
+  95   6                          {
+  96   7                            OLED_Display_On();
+  97   7                            u8_sleep = 0;
+  98   7                            count = 0;
+  99   7        //                    u32_duty = 0;
+ 100   7        //                    PWM_duty(0
+ 101   7                            SW_Reset();
+ 102   7                            LED_PIN = 1;
+ 103   7                            P11_PushPull_Mode;
+ 104   7                            set_EX0;
+ 105   7                          }
+ 106   6                        }
+ 107   5                      }
+ 108   4                  }
+ 109   3                }
+C51 COMPILER V9.60.0.0   MAIN                                                              04/13/2022 13:58:16 PAGE 3   
+
+ 110   2                u8_switch = 0;
+ 111   2                count = 0;
+ 112   2                /************ CONTINUOUS MODE ****************/
+ 113   2                  if (CONT_PIN == 0) 
+ 114   2                  {
+ 115   3                    Timer0_Delay1ms(5);
+ 116   3                    if( CONT_PIN == 0)
+ 117   3                    {
+ 118   4                      if (u8_mode == 1) 
+ 119   4                      {
+ 120   5                        OLED_Clear();
+ 121   5                        PWM_duty(0);
+ 122   5                        LED_PIN = 1;
+ 123   5      //                  Display_cont_off();   
+ 124   5      //                  Timer0_Delay1ms(200); 
+ 125   5      //                  OLED_Clear();           
+ 126   5                        u8_mode =2; 
+ 127   5                      }
+ 128   4                      else if (u8_mode == 0) 
+ 129   4                      {
+ 130   5                        OLED_Clear();
+ 131   5                        u8_mode = 1;
+ 132   5                        PWM_duty(u32_duty);
+ 133   5                        LED_PIN = 0;
+ 134   5      //                  Display_cont_on();
+ 135   5      //                  Timer0_Delay1ms(200);
+ 136   5      //                  OLED_Clear();
+ 137   5                      }
+ 138   4                      else if (u8_mode  == 2)
+ 139   4                      {
+ 140   5                        OLED_Clear();
+ 141   5                        u8_mode =3;
+ 142   5                        u8_nitroMode = 0;
+ 143   5                        u8_nitroStart = 0;
+ 144   5                      }
+ 145   4                      else if (u8_mode  == 3)
+ 146   4                      {
+ 147   5                        OLED_Clear();
+ 148   5                        u8_mode =0;
+ 149   5                      }
+ 150   4                      while(CONT_PIN == 0);
+ 151   4                    }
+ 152   3                  }
+ 153   2                /************ MODES SYSTEM ****************/
+ 154   2                if (u8_mode == 0)
+ 155   2                {
+ 156   3                  OLED_DrawBMP(88,1,128,4,pedal_lcd);
+ 157   3                  /************ CONT PEDAL MODE ****************/
+ 158   3                  if (PEDAL_PIN == 0) 
+ 159   3                  {
+ 160   4                      PWM_duty(u32_duty);
+ 161   4                      LED_PIN = 0;
+ 162   4                  }
+ 163   3                  else 
+ 164   3                  {
+ 165   4                    PWM_duty(0);
+ 166   4                    LED_PIN = 1;
+ 167   4                  } 
+ 168   3                }
+ 169   2                else if ( u8_mode == 1)
+ 170   2                {
+ 171   3                  OLED_DrawBMP(88,1,128,4,cont);
+C51 COMPILER V9.60.0.0   MAIN                                                              04/13/2022 13:58:16 PAGE 4   
+
+ 172   3                  /************ CONT PEDAL MODE ****************/
+ 173   3                  if (PEDAL_PIN == 0) 
+ 174   3                  {
+ 175   4                    Timer0_Delay1ms(5);
+ 176   4                    if( PEDAL_PIN == 0)
+ 177   4                    {
+ 178   5                      if (u8_contpedalStatus == 0) 
+ 179   5                      {
+ 180   6                        u8_contpedalStatus =1;
+ 181   6                        PWM_duty(0);
+ 182   6                        LED_PIN = 1;
+ 183   6                      }
+ 184   5                      else 
+ 185   5                      {
+ 186   6                        u8_contpedalStatus = 0;
+ 187   6                        PWM_duty(u32_duty);
+ 188   6                        LED_PIN = 0;
+ 189   6                      }
+ 190   5                      while(PEDAL_PIN == 0 );
+ 191   5                    }
+ 192   4                  }
+ 193   3                }
+ 194   2                else if ( u8_mode == 2)
+ 195   2                {
+ 196   3                  OLED_DrawBMP(88,1,128,4,nitro);
+ 197   3                  if(u8_nitroStart == 1)
+ 198   3                  {
+ 199   4                    if (PEDAL_PIN == 0) 
+ 200   4                    {
+ 201   5                      Timer0_Delay1ms(5);
+ 202   5                      if( PEDAL_PIN == 0)
+ 203   5                      {
+ 204   6                        LED_PIN = 0;
+ 205   6                        u32_duty = ((u16_count+2)*10);
+ 206   6                        PWM_duty(u32_duty);
+ 207   6                        Timer3_Delay100ms(5);
+ 208   6                        u32_duty = ((u16_count)*10);
+ 209   6                        PWM_duty(u32_duty);
+ 210   6                        while(PEDAL_PIN == 0 );
+ 211   6                      }
+ 212   5                    }
+ 213   4          
+ 214   4                    else 
+ 215   4                    {
+ 216   5                      LED_PIN = 1;
+ 217   5                      PWM_duty(0);    
+ 218   5                    } 
+ 219   4                  }
+ 220   3                  else
+ 221   3                  {
+ 222   4                    if (u8_nitroMode == 0)
+ 223   4                    {
+ 224   5                      OLED_DrawBMP(88,4,120,6,no_line);
+ 225   5                      OLED_DrawBMP(88,6,120,8,yes);
+ 226   5                    }
+ 227   4                    else
+ 228   4                    {
+ 229   5                      OLED_DrawBMP(88,4,120,6,no);
+ 230   5                      OLED_DrawBMP(88,6,120,8,yes_line);
+ 231   5                    }
+ 232   4                  }
+ 233   3                }
+C51 COMPILER V9.60.0.0   MAIN                                                              04/13/2022 13:58:16 PAGE 5   
+
+ 234   2                else if ( u8_mode == 3)
+ 235   2                {
+ 236   3                  OLED_DrawBMP(88,1,128,4,clean_mode);
+ 237   3                }
+ 238   2                Show_Voltage(u16_count);
+ 239   2                OLED_ShowString(8,6,"DUTY:",16);
+ 240   2                OLED_ShowString(70,6,"%",16);
+ 241   2                OLED_ShowNum(50,6,u16_duty,2,16);
+ 242   2              }   
+ 243   1      }
+ 244          /*--------------------------------------------------------------------------------------------------------
+             --*/
+ 245          /* Interrupt - Voltage SETUP                                                                              
+             - */
+ 246          /*--------------------------------------------------------------------------------------------------------
+             --*/
+ 247          void ADC_ISR(void)
+ 248          interrupt 11  
+ 249          {
+ 250   1        adc_value = ADC_read(); 
+ 251   1        //LED_PIN = ~LED_PIN;
+ 252   1        
+ 253   1          if(adc_value > 3900)  // 3072 5A Overcurent
+ 254   1            {
+ 255   2              u32_duty = 0;
+ 256   2              PWM_duty(0);
+ 257   2              displayProtect();
+ 258   2              SW_Reset();
+ 259   2            }
+ 260   1        clr_ADCF;
+ 261   1      }
+ 262          
+ 263          void INT0_ISR(void) interrupt 0
+ 264          {
+ 265   1        if ( u8_mode == 0 || u8_mode == 1 || u8_nitroStart == 1)
+ 266   1        {
+ 267   2          if (P17 == 1) 
+ 268   2          {
+ 269   3            BUZZ_PIN = 1;
+ 270   3            Timer1_Delay10ms(3);
+ 271   3            BUZZ_PIN = 0;
+ 272   3            u16_count+=0.1;
+ 273   3            if (u16_count > 17.9) u16_count = 18.0;
+ 274   3          }
+ 275   2          else 
+ 276   2          {
+ 277   3            BUZZ_PIN = 1;
+ 278   3            Timer1_Delay10ms(1);
+ 279   3            BUZZ_PIN = 0;
+ 280   3            u16_count-=0.1;
+ 281   3            if (u16_count < 2.2) u16_count = 2.1;
+ 282   3          }
+ 283   2        }
+ 284   1        if(u8_mode == 2 && u8_nitroStart == 0)
+ 285   1        {
+ 286   2          if (P17 == 1) 
+ 287   2          {
+ 288   3            BUZZ_PIN = 1;
+ 289   3            Timer1_Delay10ms(3);
+ 290   3            BUZZ_PIN = 0;
+ 291   3            u8_nitroMode = 1;
+ 292   3          }
+C51 COMPILER V9.60.0.0   MAIN                                                              04/13/2022 13:58:16 PAGE 6   
+
+ 293   2          else 
+ 294   2          {
+ 295   3            BUZZ_PIN = 1;
+ 296   3            Timer1_Delay10ms(3);
+ 297   3            BUZZ_PIN = 0;
+ 298   3            u8_nitroMode = 0;
+ 299   3          }
+ 300   2        }
+ 301   1        if (u8_mode == 3)
+ 302   1        {
+ 303   2          if (P17 == 1) 
+ 304   2          {
+ 305   3            BUZZ_PIN = 1;
+ 306   3            Timer1_Delay10ms(3);
+ 307   3            BUZZ_PIN = 0;
+ 308   3            u16_duty+=1;
+ 309   3            if (u16_duty > 95) u16_duty = 95;
+ 310   3          }
+ 311   2          else 
+ 312   2          {
+ 313   3            BUZZ_PIN = 1;
+ 314   3            Timer1_Delay10ms(3);
+ 315   3            BUZZ_PIN = 0;
+ 316   3            u16_duty-=1;
+ 317   3            if (u16_duty < 0) u16_duty = 0;
+ 318   3          }
+ 319   2        }
+ 320   1        clr_TF0;
+ 321   1      }
+ 322          void TIM1_ISR(void) interrupt 3
+ 323          {
+ 324   1          TL1 = LOBYTE(TIMER_DIV12_VALUE_1ms);  //Find  define in "Function_define.h" "TIMER VALUE"
+ 325   1          TH1 = HIBYTE(TIMER_DIV12_VALUE_1ms);
+ 326   1          /* Your code */
+ 327   1          //P13 =~ P13 ;        /* GPIO toggle when interrupt  */
+ 328   1          u32_countSec++;
+ 329   1          if(u32_countSec == 60000)
+ 330   1          {
+ 331   2            u32_countMin++;
+ 332   2            u32_countSec = 0;
+ 333   2          }
+ 334   1          if(u32_countMin == 5)
+ 335   1          {
+ 336   2        //  BUZZ_PIN =~ BUZZ_PIN;
+ 337   2            if( adc_value < 350)
+ 338   2            {
+ 339   3              u8_cntCur++;
+ 340   3            }     
+ 341   2      
+ 342   2            if(u8_cntCur == 3)
+ 343   2            {
+ 344   3              OLED_Display_Off();
+ 345   3              u8_sleep = 1;
+ 346   3              count = 0;
+ 347   3              u32_duty = 0;
+ 348   3              PWM_duty(0);
+ 349   3              LED_PIN = 1;
+ 350   3              P11_Input_Mode;
+ 351   3              clr_EX0;
+ 352   3              u8_cntCur = 0;
+ 353   3            }
+ 354   2            u32_countMin = 0;
+C51 COMPILER V9.60.0.0   MAIN                                                              04/13/2022 13:58:16 PAGE 7   
+
+ 355   2          }
+ 356   1          TF1 = 0 ;
+ 357   1      }
+ 358          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   1510    ----
+   CONSTANT SIZE    =    864    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =     30    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

@@ -1,0 +1,9 @@
+".\Objects\Common.obj",
+".\Objects\Delay.obj",
+".\Objects\main.obj",
+".\Objects\HW_init.obj",
+".\Objects\oled_i2c.obj",
+".\Objects\STARTUP.obj" 
+TO ".\Objects\MS51_Tatoo_Machine" 
+PRINT(".\Listings\MS51_Tatoo_Machine.m51") RAMSIZE(256) 
+DISABLEWARNING (16) 

@@ -40,7 +40,7 @@ void WDT_config(void);
 int main()
 {
 	//-------- Initial Peripherals--------------
-//	InitialUART0_Timer3(115200);
+	InitialUART0_Timer3(115200);
 	InitGPIO();
 	//------------Bootstrap-----------
 	PWM_H_A = 0;PWM_H_B = 0;PWM_H_C = 0;
@@ -57,7 +57,7 @@ int main()
 	PWM01_DEADTIME_ENABLE;
 	PWM45_DEADTIME_ENABLE;
 	PWM34_DEADTIME_ENABLE;
-	PWM_duty(50);
+	//PWM_duty(50);
 	
 	//--------Init TIMER--------------
 	InitTimer0();
@@ -71,14 +71,14 @@ int main()
 //	set_WDCLR;
 
 	//--------ADC start run--------------
+	set_EADC;
 	set_ADCS;                 // Start ADC 
-	
   //-------- PWM start run--------------
   set_EPWM;									//Enable PWM interrupt
 	set_EFB;
 	set_EA;									
   set_LOAD;
-  set_PWMRUN;
+  //set_PWMRUN;
 	
 	while(1)
 	{		
@@ -92,35 +92,33 @@ int main()
 //				while(DIR_PIN == 0);
 //			}
 //		}
-//		ADC_targetspeed();
-////		// Channel 0 - P17
-//		u16PWMDutyValue = map(adc_value_target_speed, 0, 4095, 0, 76);
-//			if(u16PWMDutyValue>10)
-//	{
-//		set_PWMRUN;
-//		PWM_duty(u16PWMDutyValue);
-//			set_PWMRUN;
-//	}
-//	else 
-//	{
-//		clr_PWMRUN;
-//	}
+		
+		ADC_targetspeed();
+		// Channel 0 - P17
+		u16PWMDutyValue = map(adc_value_target_speed, 0, 4095, 0, 95);
+		if(u16PWMDutyValue>10)
+		{
+			set_PWMRUN;
+			PWM_duty(u16PWMDutyValue);
+			set_PWMRUN;
+		}
+		else 
+		{
+			u16PWMDutyValue = 0;
+			PWM_duty(u16PWMDutyValue);
+			clr_PWMRUN;
+		}
 			
 //		printf ("\n Target Speed Value = %d",u16PWMDutyValue);  // Read u16PWMDutyValue
-//		//printf ("\n Target Speed Value = %d",adc_value_target_speed);
+//		printf ("\n Target Speed Value = %d",adc_value_target_speed);
 //		ADC_voltage();                                          // Channel 4 - P04  
-//		//printf ("\n Voltage value = %d",adc_value_vin);                
-//		
-//		//ADC_current();                                          // Channel 5 - P06
+//		printf ("\n Voltage value = %d",adc_value_vin);                
+
+//		ADC_current();                                          // Channel 5 - P06
 //		printf ("\n Current value = %d",adc_value_current);
+		
 //		Timer0_Delay1ms(200);
-//		//		
-//		//ChangeMotorPhaseClockwise();   
-//		//ChangeMotorPhaseCounterClockwise();
-//		if (g_u16CurrentSpeed > 4000) {g_u16CurrentSpeed = 4000;}
-//		printf ("\n Current Speed = %d",g_u16CurrentSpeed);
-//		g_u16CurrentSpeed = 0;
-		//ChangeMotorPhaseClockwise();
+
 		//set_WDCLR;		
 	}
 }
@@ -265,6 +263,19 @@ void InitTimer2forCapture(void)
 /*---------------------------------------------------------------------------------------------------------*/
 /* Init ADC                                                                                                */
 /*---------------------------------------------------------------------------------------------------------*/
+unsigned int ADC_read(void){
+	unsigned int adc_value = 0x0000;
+	ADCCON1|=0X30;            /* clock divider */
+  ADCCON2|=0X0E;            /* AQT time */
+  AUXR1|=SET_BIT4;          /* ADC clock low speed */
+  clr_ADCF;              
+  set_ADCS;                   
+  while(ADCF == 0);
+  adc_value = ADCRH;
+  adc_value <<= 4;
+  adc_value |= ADCRL;
+  return adc_value;
+}
 void ADC_targetspeed(void)
 { 
 	Enable_ADC_AIN0;
@@ -280,7 +291,7 @@ void ADC_targetspeed(void)
 
 void ADC_voltage(void)
 { 
-	Enable_ADC_AIN5;
+	Enable_ADC_AIN4;
 	clr_ADCF;              
   set_ADCS;
 	while(ADCF == 0);
@@ -293,12 +304,12 @@ void ADC_voltage(void)
 	ADCCON2 =0;
 	adc_value_vin = adc_value;
 	Disable_ADC;
-	printf ("\n Voltage value = %d",adc_value_vin);
+	//printf ("\n Voltage value = %d",adc_value_vin);
 }
 
 void ADC_current(void)
 {
-	Enable_ADC_AIN4;
+	Enable_ADC_AIN5;
 	adc_value = ADCRH;
   adc_value <<= 4;
   adc_value |= ADCRL;		

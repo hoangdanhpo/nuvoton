@@ -1,0 +1,18 @@
+void EXT0_config(void);
+void InitPWM(void);
+void PWM_duty(uint16_t duty);
+void HW_init(void);
+void Display_cont_on(void);
+void Display_cont_off(void);
+void num_float(uint8_t num);
+void num_chuc(uint8_t num);
+void num_donvi(uint8_t num);
+void Show_Voltage(double v_floatNum_f32);
+void displayProtect(void);
+unsigned int ADC_read(void);
+//void protectCurrent(void);
+void set_Timer_3(unsigned int value);
+void setup_Timer_3(void);
+void SW_Reset(void);
+void set_ADC_comparator_value(unsigned int value);
+void InitTimer1(void);
