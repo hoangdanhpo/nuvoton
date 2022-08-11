@@ -35,7 +35,6 @@ void HW_init(void)
 	num_donvi(5);
 	OLED_DrawBMP(56,5,64,6,dot);
 	num_float(0);
-
 	clr_LOAD;
 }
 void InitTimer1(void)

@@ -14,7 +14,7 @@
 /*Global Variable                                                                                              	 */
 /*---------------------------------------------------------------------------------------------------------*/
 double u16_count = 5.0;
-uint16_t u16_duty = 50;
+uint16_t u16_duty = 0;
 uint32_t u32_duty = 0;
 uint8_t u8_contStatus = 0;
 uint8_t u8_pedalStatus = 0;
@@ -28,9 +28,9 @@ uint32_t u32_countSec = 0,u32_countMin = 0;
 void main()
 {	
 		HW_init();
-		u32_duty = 0;
 		PWM_duty(0);
 	  u16_count = 5.0;
+		u32_duty = u16_count*10;
 		//InitialUART1_Timer3(115200);
 		while(1)
 		{
@@ -60,16 +60,16 @@ void main()
 									u8_nitroStart = 1;
 								}
 							}
-							else if (u8_mode == 0 || u8_mode == 1 || u8_nitroStart == 1)
-							{
-								u32_duty = (u16_count*10);
-								//u16_duty = u32_duty*0.5;
-								if(u8_mode == 1 && u8_contpedalStatus == 0 && u8_sleep == 0)
-								{
-									PWM_duty(u32_duty);
-								}
-								set_PWMRUN;
-							}
+//							else if (u8_mode == 0 || u8_mode == 1 || u8_nitroStart == 1)
+//							{
+//								u32_duty = (u16_count*10);
+//								//u16_duty = u32_duty*0.5;
+//								if(u8_mode == 1 && u8_contpedalStatus == 0 && u8_sleep == 0)
+//								{
+//									PWM_duty(u32_duty);
+//								}
+//								set_PWMRUN;
+//							}
 								/************ SLEEP MODE ****************/
 								while(ENC_PIN == 0)
 								{
@@ -138,14 +138,9 @@ void main()
 								else if (u8_mode  == 2)
 								{
 									OLED_Clear();
-									u8_mode =3;
+									u8_mode =0;
 									u8_nitroMode = 0;
 									u8_nitroStart = 0;
-								}
-								else if (u8_mode  == 3)
-								{
-									OLED_Clear();
-									u8_mode =0;
 								}
 								while(CONT_PIN == 0);
 							}
@@ -236,9 +231,7 @@ void main()
 						OLED_DrawBMP(88,1,128,4,clean_mode);
 					}
 					Show_Voltage(u16_count);
-					OLED_ShowString(8,6,"DUTY:",16);
-					OLED_ShowString(70,6,"%",16);
-					OLED_ShowNum(50,6,u16_duty,2,16);
+					OLED_ShowChar(0,0," ",2);
 				}		
 }
 /*---------------------------------------------------------------------------------------------------------*/
@@ -270,6 +263,9 @@ void INT0_ISR(void) interrupt 0
 			Timer1_Delay10ms(3);
 			BUZZ_PIN = 0;
 			u16_count+=0.1;
+			u32_duty = (u16_count*10);
+			PWM_duty(u32_duty);
+			set_PWMRUN;
 			if (u16_count > 17.9) u16_count = 18.0;
 		}
 		else 
@@ -278,6 +274,9 @@ void INT0_ISR(void) interrupt 0
 			Timer1_Delay10ms(1);
 			BUZZ_PIN = 0;
 			u16_count-=0.1;
+			u32_duty = (u16_count*10);
+			PWM_duty(u32_duty);
+			set_PWMRUN;
 			if (u16_count < 2.2) u16_count = 2.1;
 		}
 	}
@@ -296,25 +295,6 @@ void INT0_ISR(void) interrupt 0
 			Timer1_Delay10ms(3);
 			BUZZ_PIN = 0;
 			u8_nitroMode = 0;
-		}
-	}
-	if (u8_mode == 3)
-	{
-		if (P17 == 1) 
-		{
-			BUZZ_PIN = 1;
-			Timer1_Delay10ms(3);
-			BUZZ_PIN = 0;
-			u16_duty+=1;
-			if (u16_duty > 95) u16_duty = 95;
-		}
-		else 
-		{
-			BUZZ_PIN = 1;
-			Timer1_Delay10ms(3);
-			BUZZ_PIN = 0;
-			u16_duty-=1;
-			if (u16_duty < 0) u16_duty = 0;
 		}
 	}
 	clr_TF0;
