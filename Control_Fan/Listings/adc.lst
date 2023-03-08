@@ -1,0 +1,78 @@
+C51 COMPILER V9.60.7.0   ADC                                                               03/05/2023 16:07:16 PAGE 1   
+
+
+C51 COMPILER V9.60.7.0, COMPILATION OF MODULE ADC
+OBJECT MODULE PLACED IN .\Objects\adc.obj
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE SRC\adc.c OPTIMIZE(8,SPEED) BROWSE INCDIR(.\INC) DEFINE(FOSC_160000) DEB
+                    -UG OBJECTEXTEND PRINT(.\Listings\adc.lst) TABS(2) OBJECT(.\Objects\adc.obj)
+
+line level    source
+
+   1          /* adc.c */
+   2          #include <MS51.h>
+   3          #include "adc.h"
+   4          
+   5          void ADC_Init(void)
+   6          {
+   7   1        ADCCON1 |= (1 << 0);
+   8   1        /* Clock */
+   9   1        ADCCON1 &= ~(0x30);
+  10   1        ADCCON1 |= 0x00;
+  11   1        /* Channel 4 */
+  12   1        P0M1 |= (1 << 5);
+  13   1        P0M2 &= ~(1 << 5);
+  14   1        AINDIDS |= (1 << 4);
+  15   1        EADC = 1;
+  16   1      }
+  17          
+  18          void ADC_SelectChannel(unsigned char u8Channel)
+  19          {
+  20   1        ADCCON0 &= ~(0x0F);
+  21   1        ADCCON0 |= (u8Channel & 0x07);
+  22   1      }
+  23          
+  24          void ADC_StartConv(void)
+  25          {
+  26   1        ADCS = 1;
+  27   1      }
+  28          
+  29          unsigned char ADC_IsBusy(void)
+  30          {
+  31   1        return ADCS;
+  32   1      }
+  33          
+  34          unsigned int ADC_GetData(void)
+  35          {
+  36   1        return (ADCRH * 16 + (ADCRL & 0x0F));
+  37   1      }
+  38          
+  39          void ADC_ClearFlag(void)
+  40          {
+  41   1        ADCF = 0;
+  42   1      }
+  43          
+  44          void ADC_Enable(void)
+  45          {
+  46   1        ADCCON1 |= (1 << 0);
+  47   1      }
+  48          
+  49          void ADC_Disable(void)
+  50          {
+  51   1        ADCCON1 &= ~(1 << 0);
+  52   1      }
+
+
+C51 COMPILER V9.60.7.0   ADC                                                               03/05/2023 16:07:16 PAGE 2   
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =     68    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

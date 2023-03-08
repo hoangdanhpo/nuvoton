@@ -1,0 +1,370 @@
+C51 COMPILER V9.60.7.0   MAIN                                                              03/05/2023 16:07:16 PAGE 1   
+
+
+C51 COMPILER V9.60.7.0, COMPILATION OF MODULE MAIN
+OBJECT MODULE PLACED IN .\Objects\main.obj
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE SRC\main.c OPTIMIZE(8,SPEED) BROWSE INCDIR(.\INC) DEFINE(FOSC_160000) DE
+                    -BUG OBJECTEXTEND PRINT(.\Listings\main.lst) TABS(2) OBJECT(.\Objects\main.obj)
+
+line level    source
+
+   1          /*--------------------------------------------------------------------------------------------------------
+             --*/
+   2          /* Include File                                                                                           
+             - */
+   3          /*--------------------------------------------------------------------------------------------------------
+             --*/
+   4          #include "main.h"
+   5          #include "adc.h"
+   6          /*--------------------------------------------------------------------------------------------------------
+             --*/
+   7          /* Macro                                                                                                   */
+   8          /*--------------------------------------------------------------------------------------------------------
+             --*/
+   9          #define DEFAULT_DELAY 1000
+  10          #define DEBOUNCE_FAN  250
+  11          #define TEST_RELAY
+  12          /*--------------------------------------------------------------------------------------------------------
+             --*/
+  13          /* Variable                                                                                               
+             - */
+  14          /*--------------------------------------------------------------------------------------------------------
+             --*/
+  15          uint16_t u16DelayRelay;
+  16          uint16_t u16AdcValue;
+  17          
+  18          uint8_t u8StatusPinFAN;
+  19          uint8_t u8StatusPinKEYCARD;
+  20          uint8_t u8StatusPinWINDOWN;
+  21          
+  22          uint8_t F_Case = 0;
+  23          uint8_t Is_F_Case_2 = OFF;
+  24          uint8_t Is_F_Case_3 = OFF;
+  25          uint8_t Delay_Act_Fan = 0;
+  26          int cnt;
+  27          /*--------------------------------------------------------------------------------------------------------
+             --*/
+  28          /* Function                                                                                               
+             - */
+  29          /*--------------------------------------------------------------------------------------------------------
+             --*/
+  30          void InitGPIO(void);                
+  31          void Active_Relay(uint16_t delay);
+  32          long map(long x, long in_min, long in_max, long out_min, long out_max);
+  33          /*--------------------------------------------------------------------------------------------------------
+             --*/
+  34          /* Main                                                                                                   
+             - */
+  35          /*--------------------------------------------------------------------------------------------------------
+             --*/
+  36          int main()
+  37          {
+  38   1        //-------- Initial Peripherals--------------
+  39   1        InitGPIO();
+  40   1        P03 = 0;
+C51 COMPILER V9.60.7.0   MAIN                                                              03/05/2023 16:07:16 PAGE 2   
+
+  41   1        //--------ADC start run--------------
+  42   1        ADC_Init();
+  43   1        ADC_SelectChannel(4);
+  44   1        ADC_StartConv();
+  45   1        set_EA;
+  46   1        
+  47   1        while(1)
+  48   1        {   
+  49   2      #if 0
+                  RELAY_PIN = 1;
+                  Timer0_Delay1ms(DEFAULT_DELAY);
+                  RELAY_PIN = ~RELAY_PIN;
+                  Timer0_Delay1ms(DEFAULT_DELAY);
+              #endif
+  55   2          //Active_Relay(DEFAULT_DELAY);
+  56   2          
+  57   2          u8StatusPinFAN = FAN_PIN;
+  58   2          
+  59   2          u8StatusPinKEYCARD = KEYCARD_PIN;
+  60   2          
+  61   2          u8StatusPinWINDOWN = WINDOWN_SW_PIN;
+  62   2      
+  63   2          
+  64   2          if ( ( OFF == u8StatusPinFAN )
+  65   2            && (INSERTED == u8StatusPinKEYCARD)
+  66   2            && (CLOSED == u8StatusPinWINDOWN) 
+  67   2            && (F_Case == 0)) 
+  68   2          {
+  69   3              F_Case = 1;
+  70   3          }
+  71   2          else if ( ON == u8StatusPinFAN )
+  72   2          {
+  73   3            if ( ( NOT_INSERTED == u8StatusPinKEYCARD ) && (CLOSED == u8StatusPinWINDOWN) && (Is_F_Case_2 == OFF) )
+  74   3            {
+  75   4                Is_F_Case_2 = ON;
+  76   4                F_Case = 2;
+  77   4            }
+  78   3            if ( ( INSERTED == u8StatusPinKEYCARD ) && (NOT_CLOSED == u8StatusPinWINDOWN) && (Is_F_Case_3 == OFF) )
+  79   3            {
+  80   4                Is_F_Case_3 = ON;
+  81   4                F_Case = 3;
+  82   4            }
+  83   3          }
+  84   2          else
+  85   2          {
+  86   3            F_Case = 0;
+  87   3            Is_F_Case_2 = OFF;
+  88   3            Is_F_Case_3 = OFF;
+  89   3            RELAY_PIN = 0;
+  90   3          }
+  91   2          
+  92   2          if ( ( ON == u8StatusPinFAN )
+  93   2              && (INSERTED == u8StatusPinKEYCARD)
+  94   2              && (CLOSED == u8StatusPinWINDOWN) ) 
+  95   2          {
+  96   3              RELAY_PIN = 0;
+  97   3              F_Case = 0;
+  98   3          }
+  99   2          
+ 100   2          switch(F_Case)
+ 101   2          {
+ 102   3            case 1:
+C51 COMPILER V9.60.7.0   MAIN                                                              03/05/2023 16:07:16 PAGE 3   
+
+ 103   3            {
+ 104   4              u8StatusPinFAN = FAN_PIN;
+ 105   4              u8StatusPinKEYCARD = KEYCARD_PIN;
+ 106   4              u8StatusPinWINDOWN = WINDOWN_SW_PIN;
+ 107   4              
+ 108   4              if (FAN_PIN == ON) 
+ 109   4              {
+ 110   5                Timer0_Delay1ms(DEBOUNCE_FAN);
+ 111   5                if( FAN_PIN == ON)
+ 112   5                {
+ 113   6                  u8StatusPinFAN = FAN_PIN;
+ 114   6                }
+ 115   5              }
+ 116   4              
+ 117   4              if ( OFF == u8StatusPinFAN )
+ 118   4              {
+ 119   5                Active_Relay(u16DelayRelay);
+ 120   5                Timer0_Delay1ms(DEFAULT_DELAY);
+ 121   5              }
+ 122   4              
+ 123   4              cnt = 0;
+ 124   4              while ( ( OFF == u8StatusPinFAN )
+ 125   4                  && (INSERTED == u8StatusPinKEYCARD)
+ 126   4                  && (CLOSED == u8StatusPinWINDOWN) )
+ 127   4              {
+ 128   5                u8StatusPinFAN = FAN_PIN;
+ 129   5                u8StatusPinKEYCARD = KEYCARD_PIN;
+ 130   5                u8StatusPinWINDOWN = WINDOWN_SW_PIN;
+ 131   5                
+ 132   5                cnt++;
+ 133   5                
+ 134   5                /* Debounce Fan Button */
+ 135   5                if (FAN_PIN == ON) 
+ 136   5                {
+ 137   6                  Timer0_Delay1ms(DEBOUNCE_FAN);
+ 138   6                  if( FAN_PIN == ON)
+ 139   6                  {
+ 140   7                    u8StatusPinFAN = FAN_PIN;
+ 141   7                  }
+ 142   6                }
+ 143   5                
+ 144   5                if ( ON == u8StatusPinFAN )
+ 145   5                {
+ 146   6                  RELAY_PIN = 0;
+ 147   6                  break;
+ 148   6                }
+ 149   5                else 
+ 150   5                {
+ 151   6                  if(cnt > 0 && cnt < 500)
+ 152   6                  {
+ 153   7                    RELAY_PIN = 1;
+ 154   7                  }
+ 155   6                  
+ 156   6                  if(cnt > 500 && cnt < 2000)
+ 157   6                  {
+ 158   7                    RELAY_PIN = 0;
+ 159   7                  }
+ 160   6                  if ( cnt > 2000)
+ 161   6                  {
+ 162   7                    cnt = 0;
+ 163   7                  }
+ 164   6                }
+C51 COMPILER V9.60.7.0   MAIN                                                              03/05/2023 16:07:16 PAGE 4   
+
+ 165   5                
+ 166   5              }
+ 167   4              
+ 168   4              RELAY_PIN = 0;
+ 169   4              F_Case = 0;
+ 170   4              
+ 171   4              break;
+ 172   4            }
+ 173   3            case 2: 
+ 174   3            {
+ 175   4              u8StatusPinFAN = FAN_PIN;
+ 176   4              u8StatusPinKEYCARD = KEYCARD_PIN;
+ 177   4              u8StatusPinWINDOWN = WINDOWN_SW_PIN;
+ 178   4              
+ 179   4              if ( ON == u8StatusPinFAN )
+ 180   4                {
+ 181   5                  Active_Relay(u16DelayRelay);
+ 182   5                  Timer0_Delay1ms(DEFAULT_DELAY);
+ 183   5                }
+ 184   4                
+ 185   4              cnt = 0;
+ 186   4                
+ 187   4              while ( ( ON == u8StatusPinFAN )
+ 188   4                  && (NOT_INSERTED == u8StatusPinKEYCARD)
+ 189   4                  && (CLOSED == u8StatusPinWINDOWN) )
+ 190   4              {
+ 191   5                u8StatusPinFAN = FAN_PIN;
+ 192   5                u8StatusPinKEYCARD = KEYCARD_PIN;
+ 193   5                u8StatusPinWINDOWN = WINDOWN_SW_PIN;
+ 194   5                cnt++;
+ 195   5                
+ 196   5                if ( OFF == u8StatusPinFAN )
+ 197   5                {
+ 198   6                  RELAY_PIN = 0;
+ 199   6                  F_Case = 0;
+ 200   6                  break;
+ 201   6                }
+ 202   5                else 
+ 203   5                {
+ 204   6                  if(cnt > 0 && cnt < 500)
+ 205   6                  {
+ 206   7                    RELAY_PIN = 1;
+ 207   7                  }
+ 208   6                  
+ 209   6                  if(cnt > 500 && cnt < 2000)
+ 210   6                  {
+ 211   7                    RELAY_PIN = 0;
+ 212   7                  }
+ 213   6                  if ( cnt > 2000)
+ 214   6                  {
+ 215   7                    cnt = 0;
+ 216   7                  }
+ 217   6                }
+ 218   5              }
+ 219   4              Is_F_Case_2 = OFF;
+ 220   4      
+ 221   4              break;
+ 222   4            }
+ 223   3            case 3: 
+ 224   3            {
+ 225   4              u8StatusPinFAN = FAN_PIN;
+ 226   4              u8StatusPinKEYCARD = KEYCARD_PIN;
+C51 COMPILER V9.60.7.0   MAIN                                                              03/05/2023 16:07:16 PAGE 5   
+
+ 227   4              u8StatusPinWINDOWN = WINDOWN_SW_PIN;
+ 228   4              
+ 229   4              if ( ON == u8StatusPinFAN )
+ 230   4                {
+ 231   5                  Active_Relay(u16DelayRelay);
+ 232   5                  Timer0_Delay1ms(DEFAULT_DELAY);
+ 233   5                }
+ 234   4              cnt = 0;
+ 235   4                
+ 236   4              while ( ( ON == u8StatusPinFAN )
+ 237   4                  && (INSERTED == u8StatusPinKEYCARD)
+ 238   4                  && (NOT_CLOSED == u8StatusPinWINDOWN) )
+ 239   4              {
+ 240   5                u8StatusPinFAN = FAN_PIN;
+ 241   5                u8StatusPinWINDOWN = WINDOWN_SW_PIN;
+ 242   5                u8StatusPinKEYCARD = KEYCARD_PIN;
+ 243   5                
+ 244   5                cnt++;
+ 245   5                
+ 246   5                if ( OFF == u8StatusPinFAN )
+ 247   5                {
+ 248   6                  RELAY_PIN = 0;
+ 249   6                  F_Case = 0;
+ 250   6                  break;
+ 251   6                }
+ 252   5                else 
+ 253   5                {
+ 254   6                  if(cnt > 0 && cnt < 500)
+ 255   6                  {
+ 256   7                    RELAY_PIN = 1;
+ 257   7                  }
+ 258   6                  
+ 259   6                  if(cnt > 500 && cnt < 2000)
+ 260   6                  {
+ 261   7                    RELAY_PIN = 0;
+ 262   7                  }
+ 263   6                  if ( cnt > 2000)
+ 264   6                  {
+ 265   7                    cnt = 0;
+ 266   7                  }
+ 267   6                }
+ 268   5              }
+ 269   4              
+ 270   4              Is_F_Case_3 = OFF;
+ 271   4              break;
+ 272   4            }
+ 273   3            
+ 274   3            default:
+ 275   3            {
+ 276   4              F_Case = 0;
+ 277   4              /* Do nothing */
+ 278   4              break;
+ 279   4            }
+ 280   3          } 
+ 281   2        }
+ 282   1      }
+ 283          
+ 284          /*****************************************CONFIGUARE******************************************************
+             -*/
+ 285          /*--------------------------------------------------------------------------------------------------------
+             --*/
+ 286          /* Init GPIO                                                                                              
+C51 COMPILER V9.60.7.0   MAIN                                                              03/05/2023 16:07:16 PAGE 6   
+
+             - */
+ 287          /*--------------------------------------------------------------------------------------------------------
+             --*/
+ 288          void InitGPIO(void)
+ 289          {
+ 290   1          /* Keycard */
+ 291   1          P11_Input_Mode;     
+ 292   1          /* Window switch */
+ 293   1          P00_Input_Mode;     
+ 294   1          /* FAN */
+ 295   1          P00_Input_Mode;   
+ 296   1          /* RELAY */
+ 297   1          P03_PushPull_Mode; 
+ 298   1      }
+ 299          
+ 300          void Active_Relay(uint16_t delay)
+ 301          {
+ 302   1        RELAY_PIN = 1;
+ 303   1        Timer0_Delay1ms(delay);
+ 304   1        RELAY_PIN = 0;
+ 305   1      }
+ 306          
+ 307          void ADC_ISR(void) interrupt 11
+ 308          {
+ 309   1        
+ 310   1        u16AdcValue = ADC_GetData();
+ 311   1        u16DelayRelay = map(u16AdcValue , 0, 1248, 100 , 5000); 
+ 312   1        ADC_ClearFlag();
+ 313   1        ADC_StartConv();
+ 314   1      }
+ 315          
+ 316          long map(long x, long in_min, long in_max, long out_min, long out_max) {
+ 317   1        return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+ 318   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    978    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =     13      20
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)
