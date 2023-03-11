@@ -1,0 +1,217 @@
+C51 COMPILER V9.60.7.0   MAIN                                                              03/11/2023 16:45:47 PAGE 1   
+
+
+C51 COMPILER V9.60.7.0, COMPILATION OF MODULE MAIN
+OBJECT MODULE PLACED IN .\Objects\main.obj
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE SRC\main.c OPTIMIZE(8,SPEED) BROWSE INCDIR(.\INC) DEFINE(FOSC_160000) DE
+                    -BUG OBJECTEXTEND PRINT(.\Listings\main.lst) TABS(2) OBJECT(.\Objects\main.obj)
+
+line level    source
+
+   1          /*--------------------------------------------------------------------------------------------------------
+             --*/
+   2          /* Include File                                                                                           
+             - */
+   3          /*--------------------------------------------------------------------------------------------------------
+             --*/
+   4          #include "main.h"
+   5          /*--------------------------------------------------------------------------------------------------------
+             --*/
+   6          /* Macro                                                                                                  
+             - */
+   7          /*--------------------------------------------------------------------------------------------------------
+             --*/
+   8          #define HOLD_TIME           2000
+   9          #define NUM_SPEED_DEFAULT   0
+  10          #define NUM_SPEED_L         1
+  11          #define NUM_SPEED_M         2
+  12          #define NUM_SPEED_H         3
+  13          #define NUM_SPEED_MAX       4
+  14          /*--------------------------------------------------------------------------------------------------------
+             --*/
+  15          /* Variable                                                                                               
+             - */
+  16          /*--------------------------------------------------------------------------------------------------------
+             --*/
+  17          uint8_t IsActiveRelay;
+  18          uint8_t StatusSpeed1;
+  19          uint8_t StatusSpeed2;
+  20          uint8_t StatusSpeed3;
+  21          uint8_t NumControlFan;
+  22          uint8_t temp = 0;
+  23          /*--------------------------------------------------------------------------------------------------------
+             --*/
+  24          /* Function                                                                                               
+             - */
+  25          /*--------------------------------------------------------------------------------------------------------
+             --*/
+  26          void InitGPIO(void);
+  27          void Set_RL_FAN_Default(void);
+  28          void Set_RL_Speed_1(void);
+  29          void Set_RL_Speed_2(void);
+  30          void Set_RL_Speed_3(void);
+  31          /*--------------------------------------------------------------------------------------------------------
+             --*/
+  32          /* Typedef                                                                                                
+             -*/
+  33          /*--------------------------------------------------------------------------------------------------------
+             --*/
+  34          typedef void (*t_Speed_FUNC)( void );
+  35          const t_Speed_FUNC arr_Speed_Func[NUM_SPEED_MAX] =
+  36          {
+  37              &Set_RL_FAN_Default,
+  38              &Set_RL_Speed_1,
+  39              &Set_RL_Speed_2,
+C51 COMPILER V9.60.7.0   MAIN                                                              03/11/2023 16:45:47 PAGE 2   
+
+  40              &Set_RL_Speed_3
+  41          };
+  42          /*--------------------------------------------------------------------------------------------------------
+             --*/
+  43          /* Main                                                                                                   
+             - */
+  44          /*--------------------------------------------------------------------------------------------------------
+             --*/
+  45          int main()
+  46          {
+  47   1          /*-------- Initial Peripherals--------------*/
+  48   1          InitGPIO();
+  49   1          IsActiveRelay = OFF;
+  50   1          NumControlFan = NUM_SPEED_DEFAULT;
+  51   1          while(1)
+  52   1          { 
+  53   2            #if 1
+  54   2              if ( IsActiveRelay == OFF)
+  55   2              {
+  56   3                  /* Power Button */
+  57   3                  if (BTN_POWER == ON)
+  58   3                  {
+  59   4                      Timer0_Delay1ms(HOLD_TIME);
+  60   4                      if( BTN_POWER == ON)
+  61   4                      {
+  62   5                          NumControlFan = NUM_SPEED_L;
+  63   5                          IsActiveRelay = ON;
+  64   5                          while(BTN_POWER == ON);
+  65   5                      }
+  66   4                  }
+  67   3              }
+  68   2              else
+  69   2              {
+  70   3                  /* Power Button */
+  71   3                  if ( BTN_POWER == ON )
+  72   3                  {
+  73   4                      Timer0_Delay1ms(HOLD_TIME);
+  74   4                      if( BTN_POWER == ON)
+  75   4                      {
+  76   5                          NumControlFan = NUM_SPEED_DEFAULT;
+  77   5                          IsActiveRelay = OFF;
+  78   5                          while(BTN_POWER == ON);
+  79   5                      }
+  80   4                  }
+  81   3      
+  82   3                  /* UP Button */
+  83   3                  if ( BTN_UP == ON )
+  84   3                  {
+  85   4                      Timer0_Delay1ms(5);
+  86   4                      if ( BTN_UP == ON )
+  87   4                      {
+  88   5                          NumControlFan++;
+  89   5                          if ( NumControlFan > NUM_SPEED_H )
+  90   5                          {
+  91   6                              NumControlFan = NUM_SPEED_H;
+  92   6                          }
+  93   5                          while(BTN_UP == ON);
+  94   5                      }
+  95   4                  }
+  96   3      
+  97   3                  /* DOWN Button */
+  98   3                  if (BTN_DOWN == ON)
+C51 COMPILER V9.60.7.0   MAIN                                                              03/11/2023 16:45:47 PAGE 3   
+
+  99   3                  {
+ 100   4                      Timer0_Delay1ms(5);
+ 101   4                      if( BTN_DOWN == ON)
+ 102   4                      {
+ 103   5                          NumControlFan--;
+ 104   5                          if (NumControlFan < NUM_SPEED_L )
+ 105   5                          {
+ 106   6                              NumControlFan = NUM_SPEED_L;
+ 107   6                          }
+ 108   5                          while(BTN_DOWN == ON);
+ 109   5                      }
+ 110   4                  }
+ 111   3              }
+ 112   2              
+ 113   2              /* Main task system */
+ 114   2              arr_Speed_Func[NumControlFan]();
+ 115   2              #endif
+ 116   2          }
+ 117   1      }
+ 118          
+ 119          /*--------------------------------------------------------------------------------------------------------
+             --*/
+ 120          /* Init GPIO                                                                                              
+             - */
+ 121          /*--------------------------------------------------------------------------------------------------------
+             --*/
+ 122          void InitGPIO(void)
+ 123          {
+ 124   1          /* POWER */
+ 125   1          P12_Input_Mode;
+ 126   1          /* UP */
+ 127   1          P10_Input_Mode;
+ 128   1          /* DOWN */
+ 129   1          P00_Input_Mode;
+ 130   1          /* RELAY SPEED L */
+ 131   1          P17_PushPull_Mode;
+ 132   1          /* RELAY SPEED M */
+ 133   1          P15_PushPull_Mode;
+ 134   1          /* RELAY SPEED H */
+ 135   1          P01_PushPull_Mode;
+ 136   1      }
+ 137          /*--------------------------------------------------------------------------------------------------------
+             --*/
+ 138          /* System Sumilink                                                                                        
+             - */
+ 139          /*--------------------------------------------------------------------------------------------------------
+             --*/
+ 140          void Set_RL_Speed_1(void)
+ 141          {
+ 142   1          SPEED_L = ON;
+ 143   1          SPEED_M = OFF;
+ 144   1          SPEED_H = OFF;
+ 145   1      }
+ 146          void Set_RL_Speed_2(void)
+ 147          {
+ 148   1          SPEED_L = OFF;
+ 149   1          SPEED_M = ON;
+ 150   1          SPEED_H = OFF;
+ 151   1      }
+ 152          void Set_RL_Speed_3(void)
+ 153          {
+ 154   1          SPEED_L = OFF;
+C51 COMPILER V9.60.7.0   MAIN                                                              03/11/2023 16:45:47 PAGE 4   
+
+ 155   1          SPEED_M = OFF;
+ 156   1          SPEED_H = ON;
+ 157   1      }
+ 158          void Set_RL_FAN_Default(void)
+ 159          {
+ 160   1          SPEED_L = OFF;
+ 161   1          SPEED_M = OFF;
+ 162   1          SPEED_H = OFF;
+ 163   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    213    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =     18    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

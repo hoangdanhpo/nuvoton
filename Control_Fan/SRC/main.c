@@ -6,9 +6,8 @@
 /*---------------------------------------------------------------------------------------------------------*/
 /* Macro			                                                                                             */
 /*---------------------------------------------------------------------------------------------------------*/
-#define DEFAULT_DELAY 1000
-#define DEBOUNCE_FAN 	250
-#define TEST_RELAY
+#define DEFAULT_DELAY 	1000
+#define DEBOUNCE_FAN 		250
 /*---------------------------------------------------------------------------------------------------------*/
 /* Variable                                                                                                */
 /*---------------------------------------------------------------------------------------------------------*/
@@ -19,15 +18,18 @@ uint8_t u8StatusPinFAN;
 uint8_t u8StatusPinKEYCARD;
 uint8_t u8StatusPinWINDOWN;
 
-uint8_t F_Case = 0;
-uint8_t Is_F_Case_2 = OFF;
-uint8_t Is_F_Case_3 = OFF;
-int cnt;
+uint8_t F_Case;
+uint8_t Is_F_Case_1;
+uint8_t Is_F_Case_2;
+uint8_t Is_F_Case_3;
+uint16_t u16Count;
 /*---------------------------------------------------------------------------------------------------------*/
 /* Function                                                                                                */
 /*---------------------------------------------------------------------------------------------------------*/
 void InitGPIO(void);                
 void Active_Relay(uint16_t delay);
+void Default_Mode(void);
+void Update_Status_PIN(void);
 long map(long x, long in_min, long in_max, long out_min, long out_max);
 /*---------------------------------------------------------------------------------------------------------*/
 /* Main                                                                                                    */
@@ -37,6 +39,10 @@ int main()
 	//-------- Initial Peripherals--------------
 	InitGPIO();
 	RELAY_PIN = 0;
+	F_Case = 0;
+	Is_F_Case_1 = OFF;
+	Is_F_Case_2 = OFF;
+	Is_F_Case_3 = OFF;
 	//--------ADC start run--------------
 	ADC_Init();
 	ADC_SelectChannel(4);
@@ -45,53 +51,82 @@ int main()
 	
 	while(1)
 	{		
-		u8StatusPinFAN = FAN_PIN;	
-		u8StatusPinKEYCARD = KEYCARD_PIN;	
-		u8StatusPinWINDOWN = WINDOWN_SW_PIN;
+		Update_Status_PIN();
+		
+		/* Default case */
+		if ( ( OFF == u8StatusPinFAN )
+			&& (NOT_INSERTED == u8StatusPinKEYCARD)
+			&& (CLOSED == u8StatusPinWINDOWN) ) 
+		{
+			Default_Mode();
+		}
+		
+		if ( ( ON == u8StatusPinFAN )
+			&& (INSERTED == u8StatusPinKEYCARD)
+			&& (CLOSED == u8StatusPinWINDOWN) ) 
+		{
+			Default_Mode();
+		}
+		
+		if ( ( OFF == u8StatusPinFAN )
+			&& (NOT_INSERTED == u8StatusPinKEYCARD)
+			&& (CLOSED == u8StatusPinWINDOWN) ) 
+		{
+			Default_Mode();
+		}
+		
+		if ( ( OFF == u8StatusPinFAN )
+			&& (INSERTED == u8StatusPinKEYCARD)
+			&& (NOT_CLOSED == u8StatusPinWINDOWN) ) 
+		{
+			Default_Mode();
+		}
+		
+		if ( ( ON == u8StatusPinFAN )
+			&& (NOT_INSERTED == u8StatusPinKEYCARD)
+			&& (NOT_CLOSED == u8StatusPinWINDOWN) ) 
+		{
+			Default_Mode();
+		}
+		
+		/* Active case */
 		
 		if ( ( OFF == u8StatusPinFAN )
 			&& (INSERTED == u8StatusPinKEYCARD)
 			&& (CLOSED == u8StatusPinWINDOWN) 
-		  && (F_Case == 0)) 
+		  	&& (Is_F_Case_1 == OFF)) 
 		{
-				F_Case = 1;
+			Is_F_Case_1 = ON;
+			F_Case = 1;
 		}
+		
 		else if ( ON == u8StatusPinFAN )
 		{
-			if ( ( NOT_INSERTED == u8StatusPinKEYCARD ) && (CLOSED == u8StatusPinWINDOWN) && (Is_F_Case_2 == OFF) )
+			if ( ( NOT_INSERTED == u8StatusPinKEYCARD ) 
+				&& (CLOSED == u8StatusPinWINDOWN) 
+				&& (Is_F_Case_2 == OFF) )
 			{
-					Is_F_Case_2 = ON;
-					F_Case = 2;
+				Is_F_Case_2 = ON;
+				F_Case = 2;
 			}
-			if ( ( INSERTED == u8StatusPinKEYCARD ) && (NOT_CLOSED == u8StatusPinWINDOWN) && (Is_F_Case_3 == OFF) )
+			if ( ( INSERTED == u8StatusPinKEYCARD ) 
+				&& (NOT_CLOSED == u8StatusPinWINDOWN) 
+				&& (Is_F_Case_3 == OFF) )
 			{
-					Is_F_Case_3 = ON;
-					F_Case = 3;
+				Is_F_Case_3 = ON;
+				F_Case = 3;
 			}
 		}
 		else
 		{
-			F_Case = 0;
-			Is_F_Case_2 = OFF;
-			Is_F_Case_3 = OFF;
-			RELAY_PIN = 0;
-		}
-		
-		if ( ( ON == u8StatusPinFAN )
-				&& (INSERTED == u8StatusPinKEYCARD)
-				&& (CLOSED == u8StatusPinWINDOWN) ) 
-		{
-				RELAY_PIN = 0;
-				F_Case = 0;
+			Default_Mode();
 		}
 		
 		switch(F_Case)
 		{
 			case 1:
 			{
-				u8StatusPinFAN = FAN_PIN;
-				u8StatusPinKEYCARD = KEYCARD_PIN;
-				u8StatusPinWINDOWN = WINDOWN_SW_PIN;
+				Update_Status_PIN();
 				
 				if (FAN_PIN == ON) 
 				{
@@ -105,170 +140,51 @@ int main()
 				if ( OFF == u8StatusPinFAN )
 				{
 					Active_Relay(u16DelayRelay);
-					Timer0_Delay1ms(DEFAULT_DELAY);
 				}
 				
-				cnt = 0;
-				while ( ( OFF == u8StatusPinFAN )
-						&& (INSERTED == u8StatusPinKEYCARD)
-						&& (CLOSED == u8StatusPinWINDOWN) )
+				u16Count = 0;
+				while ( (INSERTED == u8StatusPinKEYCARD) && (CLOSED == u8StatusPinWINDOWN) )
 				{
-					u8StatusPinFAN = FAN_PIN;
-					u8StatusPinKEYCARD = KEYCARD_PIN;
-					u8StatusPinWINDOWN = WINDOWN_SW_PIN;
-					
-					cnt++;
-					
-					/* Debounce Fan Button */
-					if (FAN_PIN == ON) 
-					{
-						Timer0_Delay1ms(DEBOUNCE_FAN);
-						if( FAN_PIN == ON)
-						{
-							u8StatusPinFAN = FAN_PIN;
-						}
-					}
-					
-					if ( ON == u8StatusPinFAN )
-					{
-						RELAY_PIN = 0;
-						break;
-					}
-					else 
-					{
-						if(cnt > 0 && cnt < 500)
-						{
-							RELAY_PIN = 1;
-						}
-						
-						if(cnt > 500 && cnt < 2000)
-						{
-							RELAY_PIN = 0;
-						}
-						if ( cnt > 2000)
-						{
-							cnt = 0;
-						}
-					}
-					
+					Update_Status_PIN();
+					RELAY_PIN = 0;
 				}
-				
 				RELAY_PIN = 0;
 				F_Case = 0;
-				
 				break;
 			}
+
 			case 2: 
 			{
-				u8StatusPinFAN = FAN_PIN;
-				u8StatusPinKEYCARD = KEYCARD_PIN;
-				u8StatusPinWINDOWN = WINDOWN_SW_PIN;
+				Update_Status_PIN();
 				
 				if ( ON == u8StatusPinFAN )
-					{
-						Active_Relay(u16DelayRelay);
-						Timer0_Delay1ms(DEFAULT_DELAY);
-					}
-					
-				cnt = 0;
-					
-				while ( ( ON == u8StatusPinFAN )
-						&& (NOT_INSERTED == u8StatusPinKEYCARD)
-						&& (CLOSED == u8StatusPinWINDOWN) )
 				{
-					u8StatusPinFAN = FAN_PIN;
-					u8StatusPinKEYCARD = KEYCARD_PIN;
-					u8StatusPinWINDOWN = WINDOWN_SW_PIN;
-					cnt++;
-					
-					if ( OFF == u8StatusPinFAN )
-					{
-						RELAY_PIN = 0;
-						F_Case = 0;
-						break;
-					}
-					else 
-					{
-						if(cnt > 0 && cnt < 500)
-						{
-							RELAY_PIN = 1;
-						}
-						
-						if(cnt > 500 && cnt < 2000)
-						{
-							RELAY_PIN = 0;
-						}
-						if ( cnt > 2000)
-						{
-							cnt = 0;
-						}
-					}
+					Active_Relay(u16DelayRelay);
 				}
-				Is_F_Case_2 = OFF;
-
+				F_Case = 0;
 				break;
 			}
 			case 3: 
 			{
-				u8StatusPinFAN = FAN_PIN;
-				u8StatusPinKEYCARD = KEYCARD_PIN;
-				u8StatusPinWINDOWN = WINDOWN_SW_PIN;
+				Update_Status_PIN();
 				
 				if ( ON == u8StatusPinFAN )
-					{
-						Active_Relay(u16DelayRelay);
-						Timer0_Delay1ms(DEFAULT_DELAY);
-					}
-				cnt = 0;
-					
-				while ( ( ON == u8StatusPinFAN )
-						&& (INSERTED == u8StatusPinKEYCARD)
-						&& (NOT_CLOSED == u8StatusPinWINDOWN) )
 				{
-					u8StatusPinFAN = FAN_PIN;
-					u8StatusPinWINDOWN = WINDOWN_SW_PIN;
-					u8StatusPinKEYCARD = KEYCARD_PIN;
-					
-					cnt++;
-					
-					if ( OFF == u8StatusPinFAN )
-					{
-						RELAY_PIN = 0;
-						F_Case = 0;
-						break;
-					}
-					else 
-					{
-						if(cnt > 0 && cnt < 500)
-						{
-							RELAY_PIN = 1;
-						}
-						
-						if(cnt > 500 && cnt < 2000)
-						{
-							RELAY_PIN = 0;
-						}
-						if ( cnt > 2000)
-						{
-							cnt = 0;
-						}
-					}
+					Active_Relay(u16DelayRelay);
 				}
-				Is_F_Case_3 = OFF;
+				F_Case = 0;
 				break;
 			}
 			
 			default:
 			{
 				F_Case = 0;
-				/* Do nothing */
 				break;
 			}
 		}	
 	}
 }
 
-/*****************************************CONFIGUARE*******************************************************/
 /*---------------------------------------------------------------------------------------------------------*/
 /* Init GPIO                                                                                               */
 /*---------------------------------------------------------------------------------------------------------*/
@@ -289,6 +205,22 @@ void Active_Relay(uint16_t delay)
 	RELAY_PIN = 1;
 	Timer0_Delay1ms(delay);
 	RELAY_PIN = 0;
+}
+
+void Default_Mode(void)
+{
+	F_Case = 0;
+	Is_F_Case_1 = OFF;
+	Is_F_Case_2 = OFF;
+	Is_F_Case_3 = OFF;
+	RELAY_PIN = 0;
+}
+
+void Update_Status_PIN(void)
+{
+	u8StatusPinFAN = FAN_PIN;
+	u8StatusPinKEYCARD = KEYCARD_PIN;
+	u8StatusPinWINDOWN = WINDOWN_SW_PIN;
 }
 
 void ADC_ISR(void) interrupt 11

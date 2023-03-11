@@ -1,0 +1,7 @@
+".\Objects\Common.obj",
+".\Objects\Delay.obj",
+".\Objects\main.obj",
+".\Objects\STARTUP.obj" 
+TO ".\Objects\CT_NU500SSL" 
+PRINT(".\Listings\CT_NU500SSL.m51") RAMSIZE(256) 
+DISABLEWARNING (16) 

@@ -1,0 +1,8 @@
+".\Objects\Common.obj",
+".\Objects\Delay.obj",
+".\Objects\main.obj",
+".\Objects\adc.obj",
+".\Objects\STARTUP.obj" 
+TO ".\Objects\Control_Fan" 
+PRINT(".\Listings\Control_Fan.m51") RAMSIZE(256) 
+DISABLEWARNING (16) 
