@@ -5,6 +5,7 @@ void setup() {
 
 void loop() {
   // put your main code here, to run repeatedly:
+  /* Pin 8 - B0, 9 - B1, 10 - B2 */
   PORTB = B00000101; delay(10); // state 1
   PORTB = B00000001; delay(10); // state 2
   PORTB = B00000011; delay(10); // state 3

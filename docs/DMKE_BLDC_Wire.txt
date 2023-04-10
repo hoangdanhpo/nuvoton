@@ -1,0 +1,10 @@
+Power wire:
+- Red: U
+- Yellow: V
+- Black: W
+Hall wire:
+- Red: 5V
+- Black: GND
+- Blue: Hu
+- Green: Hv
+- While: Hw
